@@ -103,6 +103,17 @@ export class Storage {
     return row ? { ts: row.ts, price: row.price, source: row.source } : null;
   }
 
+  observationBefore(instrument: string, ts: number): ObservationRow | null {
+    const row = this.db
+      .prepare(
+        `SELECT ts, price FROM observations
+         WHERE instrument = ? AND ts <= ?
+         ORDER BY ts DESC LIMIT 1`
+      )
+      .get(instrument, Math.round(ts)) as { ts: number; price: number } | undefined;
+    return row ? { ts: row.ts, price: row.price } : null;
+  }
+
   observationsRange(instrument: string, fromTs: number, toTs: number): ObservationRow[] {
     return this.db
       .prepare(

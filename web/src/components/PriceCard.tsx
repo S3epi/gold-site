@@ -3,6 +3,7 @@ import {
   STATUS_HINT,
   STATUS_LABEL,
   bubbleClass,
+  faNum,
   fmtChange,
   fmtPct,
   fmtPrice,
@@ -68,14 +69,23 @@ export function PriceCard({ item, featured = false, onSelect }: Props) {
       {item.price === null && item.note ? (
         <p className="card__note">{item.note}</p>
       ) : (
-        <div className={`card__change ${trend}`}>
-          <span className="card__pct">{fmtPct(item.changePct)}</span>
+        <div
+          className={`card__change ${trend}`}
+          title="تغییر قیمت در ۲۴ ساعت گذشته بر پایه قیمت‌های پایانی ثبت‌شده"
+        >
+          <span className="card__pct">
+            {fmtPct(item.changePct)}
+            <small className="card__pct-period">۲۴س</small>
+          </span>
           <span className="card__delta">{fmtChange(item.change, item.unit)}</span>
         </div>
       )}
 
       {bubble ? (
-        <div className="card__calc">
+        <div
+          className="card__calc"
+          title={`ارزش ذاتی: ${faNum(bubble.intrinsicToman ?? 0)} تومان — حباب = مظنه − ارزش ذاتی`}
+        >
           <span>حباب</span>
           <span className="card__calc-val">
             <b className={bubbleClass(bubble.bubblePct ?? null)}>
@@ -85,7 +95,10 @@ export function PriceCard({ item, featured = false, onSelect }: Props) {
           </span>
         </div>
       ) : reference ? (
-        <div className="card__calc">
+        <div
+          className="card__calc"
+          title={`قیمت مرجع (انس × دلار × عیار): ${faNum(reference.referenceToman ?? 0)} تومان — حباب = بازار − مرجع`}
+        >
           <span>حباب</span>
           <span className="card__calc-val">
             <b className={bubbleClass(reference.premiumPct ?? null)}>

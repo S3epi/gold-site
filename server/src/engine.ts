@@ -5,6 +5,7 @@ import {
   absDiffPct,
   aggregateChartPoints,
   buildPriceItems,
+  changeToClose,
   computeCalculations,
   fetchGoldOunce,
   periodStart,
@@ -486,8 +487,37 @@ export class Engine {
     return { domestic, international, overall };
   }
 
+  /**
+   * 24h change from the server's own recorded quotes (live observations plus
+   * seeded TGJU closes). Provider-supplied percentages are replaced, never
+   * trusted, so a provider's zero or stale value cannot reach the board.
+   */
+  private apply24hChanges(now: number): void {
+    const target = now - 24 * 3600_000;
+    const oldest = now - 7 * 24 * 3600_000;
+    for (const [id, entry] of this.quotes) {
+      if (!entry || !(entry.price > 0)) continue;
+      const base = this.storage.observationBefore(id, target);
+      if (base && base.ts >= oldest) {
+        const diff = changeToClose(entry.price, base.price);
+        entry.change = diff.change;
+        entry.changePct = diff.changePct;
+        continue;
+      }
+      if (id === "melted18" && this.platformConsensus) {
+        const fresh = now - this.platformConsensus.ts < 15 * 60_000;
+        const pct = this.platformConsensus.changePct;
+        if (fresh && pct !== null && Math.abs(pct) < 20) {
+          entry.changePct = round(pct, 2);
+          entry.change = Math.round((entry.price * pct) / (100 + pct));
+        }
+      }
+    }
+  }
+
   prices(): PricesPayload {
     const now = this.now();
+    this.apply24hChanges(now);
     const items = buildPriceItems(this.buildEntries(), now, this.quality(), {
       disputed: this.disputedSet(now),
       unverified: this.unverifiedSet(now)

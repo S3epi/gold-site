@@ -45,6 +45,63 @@ export function pctChange(current: number, previous: number): number | null {
   return new Decimal(current).minus(previous).div(previous).mul(100).toNumber();
 }
 
+/**
+ * 24h change measured against a real recorded close. Returns nulls when the
+ * baseline is missing or implausible, so nothing is invented.
+ */
+export function changeToClose(
+  current: number | null,
+  close: number | null
+): { change: number | null; changePct: number | null } {
+  if (
+    current === null ||
+    close === null ||
+    !Number.isFinite(current) ||
+    !Number.isFinite(close) ||
+    current <= 0 ||
+    close <= 0 ||
+    close < current / 5 ||
+    close > current * 5
+  ) {
+    return { change: null, changePct: null };
+  }
+  return {
+    change: new Decimal(current).minus(close).toNumber(),
+    changePct: round(pctChange(current, close) ?? 0, 2)
+  };
+}
+
+export interface CloseRow {
+  ts: number;
+  close: number;
+}
+
+/**
+ * Real close that anchors the 24h change: the newest close at or before the
+ * 24h mark. When the displayed quote is itself that close (market closed and
+ * no newer session recorded), the previous session's close carries the last
+ * day's move instead of a meaningless 0.00%.
+ */
+export function baselineClose(
+  closes: CloseRow[],
+  target: number,
+  current: number
+): CloseRow | null {
+  const rows = closes
+    .filter((c) => Number.isFinite(c.ts) && Number.isFinite(c.close) && c.close > 0)
+    .sort((a, b) => a.ts - b.ts);
+  if (rows.length === 0) return null;
+  let idx = -1;
+  for (let i = 0; i < rows.length && rows[i].ts <= target; i += 1) idx = i;
+  if (idx < 0) return null;
+  const base = rows[idx];
+  const quoteIsClose = Math.abs(current - base.close) < 0.01;
+  if (base.ts === rows[rows.length - 1].ts && quoteIsClose && idx > 0) {
+    return rows[idx - 1];
+  }
+  return base;
+}
+
 export function round(n: number, dp = 0): number {
   const f = 10 ** dp;
   return Math.round(n * f) / f;

@@ -5,8 +5,10 @@ import {
   MITHQAL_PURITY,
   TROY_OUNCE_G,
   aggregateChartPoints,
+  baselineClose,
   bubbleOf,
   buildPriceItems,
+  changeToClose,
   coinIntrinsicToman,
   goldReferenceToman,
   mithqalReferenceToman,
@@ -212,6 +214,40 @@ describe("buildPriceItems", () => {
       expect(item.price).toBeNull();
       expect(item.status).toBe("UNAVAILABLE");
     }
+  });
+});
+
+describe("changeToClose", () => {
+  it("computes a signed 24h change from a real close", () => {
+    expect(changeToClose(100, 80)).toEqual({ change: 20, changePct: 25 });
+    expect(changeToClose(80, 100)).toEqual({ change: -20, changePct: -20 });
+  });
+
+  it("stays unknown without a plausible baseline", () => {
+    expect(changeToClose(100, null)).toEqual({ change: null, changePct: null });
+    expect(changeToClose(null, 100)).toEqual({ change: null, changePct: null });
+    expect(changeToClose(100, 1_000)).toEqual({ change: null, changePct: null });
+  });
+});
+
+describe("baselineClose", () => {
+  const day = 86_400_000;
+  const close = (d: number, value: number) => ({ ts: d * day, close: value });
+  const closes = [close(1, 100), close(2, 110), close(3, 120)];
+
+  it("uses the newest close at or before the 24h mark while quotes stay live", () => {
+    expect(baselineClose(closes, 2.5 * day, 130)?.close).toBe(110);
+    expect(baselineClose(closes, 3.5 * day, 125)?.close).toBe(120);
+  });
+
+  it("falls back to the previous session when the quote is the latest close", () => {
+    expect(baselineClose(closes, 3.5 * day, 120)?.close).toBe(110);
+    expect(baselineClose(closes, 3.5 * day, 120.004)?.close).toBe(110);
+  });
+
+  it("stays null without a close old enough to anchor the change", () => {
+    expect(baselineClose([close(3, 120)], 2.5 * day, 130)).toBeNull();
+    expect(baselineClose([], 2.5 * day, 130)).toBeNull();
   });
 });
 

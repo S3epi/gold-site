@@ -63,7 +63,8 @@ export function ChartPanel({
         background: { type: ColorType.Solid, color: "transparent" },
         textColor: "#8f97ac",
         fontFamily: "'Vazirmatn Variable', Tahoma, sans-serif",
-        fontSize: 12
+        fontSize: 12,
+        attributionLogo: false
       },
       grid: {
         vertLines: { color: "rgba(255,255,255,0.045)" },

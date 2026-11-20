@@ -3,14 +3,18 @@ import {
   INSTRUMENT_BY_ID,
   PERIODS,
   aggregateChartPoints,
+  baselineClose,
   buildPriceItems,
+  changeToClose,
   computeCalculations,
   fetchGoldOunce,
   fetchJson,
   fetchTgjuHistory,
+  fetchTgjuRecentCloses,
   fetchTgjuWidget,
   periodStart,
   round,
+  type DailyClose,
   type HistoryPayload,
   type HistoryPoint,
   type Instrument,
@@ -112,6 +116,7 @@ export class StaticTransport implements MarketTransport {
   private forced = new Map<string, MarketStatus>();
   private tails = new Map<string, HistoryPoint[]>();
   private historyCache = new Map<string, { at: number; rows: HistoryPoint[] }>();
+  private closesCache = new Map<string, { at: number; value: DailyClose[] }>();
   private snapshotCache: { at: number; data: PlatformSnapshot | null } = {
     at: Number.NEGATIVE_INFINITY,
     data: null
@@ -147,7 +152,9 @@ export class StaticTransport implements MarketTransport {
           continue;
         }
         if (id === "melted18" && referenceNow() - entry.ts > this.quality.maxSnapshotAgeMs) continue;
-        this.entries.set(id, entry);
+        // Changes are recomputed from recorded closes after the first poll, so
+        // no provider-supplied percentage can leak into the first paint.
+        this.entries.set(id, { ...entry, change: null, changePct: null });
         const inst = INSTRUMENT_BY_ID.get(id);
         if (inst?.tgjuKey) this.forced.set(id, "DELAYED");
       }
@@ -248,7 +255,21 @@ export class StaticTransport implements MarketTransport {
       fetchPaxgOunce(PAXG_URL, 8_000).catch(() => null)
     ]);
 
-    const intl = goldFirst ?? paxg;
+    const widgetOns = widget ? (widget.get("ons") ?? widget.get("tether_gold_xaut") ?? null) : null;
+    const intl = goldFirst
+      ? { price: goldFirst.price, ts: goldFirst.ts, source: goldFirst.source, delayed: false, high: null, low: null }
+      : widgetOns
+        ? {
+            price: widgetOns.price,
+            ts: now,
+            source: "tgju:ons",
+            delayed: true,
+            high: widgetOns.high,
+            low: widgetOns.low
+          }
+        : paxg
+          ? { price: paxg.price, ts: paxg.ts, source: paxg.source, delayed: false, high: null, low: null }
+          : null;
 
     let domesticOk = false;
     let intlOk = false;
@@ -264,8 +285,8 @@ export class StaticTransport implements MarketTransport {
           ts: now,
           receivedAt: now,
           source: "tgju (widget)",
-          change: w.change,
-          changePct: w.changePct,
+          change: null,
+          changePct: null,
           high: w.high,
           low: w.low
         });
@@ -283,29 +304,12 @@ export class StaticTransport implements MarketTransport {
         source: intl.source,
         change: null,
         changePct: null,
-        high: null,
-        low: null
+        high: intl.high,
+        low: intl.low
       });
-      this.forced.delete("xau");
+      if (intl.delayed) this.forced.set("xau", "DELAYED");
+      else this.forced.delete("xau");
       this.recordTail("xau", now, intl.price);
-    } else if (widget) {
-      for (const key of ["tether_gold_xaut", "ons"]) {
-        const w = widget.get(key);
-        if (!w) continue;
-        this.entries.set("xau", {
-          price: w.price,
-          ts: now,
-          receivedAt: now,
-          source: `tgju:${key}`,
-          change: w.change,
-          changePct: w.changePct,
-          high: w.high,
-          low: w.low
-        });
-        this.forced.set("xau", "DELAYED");
-        this.recordTail("xau", now, w.price);
-        break;
-      }
     }
 
     const melted = snapshot?.item;
@@ -318,7 +322,7 @@ export class StaticTransport implements MarketTransport {
         receivedAt: now,
         source: "platform-consensus",
         change: null,
-        changePct: melted.changePct,
+        changePct: null,
         high: null,
         low: null
       });
@@ -337,8 +341,87 @@ export class StaticTransport implements MarketTransport {
       throw new Error("منابع داده در دسترس نیستند");
     }
 
+    await this.apply24hChanges(now, snapshot);
+
     this.persist();
     return this.buildPayload(now, { domestic: domesticOk, international: intlOk });
+  }
+
+  private async loadRecentCloses(id: string): Promise<DailyClose[]> {
+    const inst = INSTRUMENT_BY_ID.get(id);
+    if (!inst?.tgjuSlug) return [];
+    const cached = this.closesCache.get(id);
+    if (cached && performance.now() - cached.at < 5 * 60_000) return cached.value;
+    try {
+      const value = await fetchTgjuRecentCloses(TGJU_HISTORY_URL, inst.tgjuSlug, 6_000);
+      this.closesCache.set(id, { at: performance.now(), value });
+      return value;
+    } catch {
+      this.closesCache.set(id, { at: performance.now(), value: cached?.value ?? [] });
+      return cached?.value ?? [];
+    }
+  }
+
+  /**
+   * 24h change is computed here from real recorded closes, never copied from a
+   * provider's own "change" field. The baseline is the newest close at or
+   * before 24 hours ago; when none exists the change stays unknown.
+   */
+  private async apply24hChanges(now: number, snapshot: PlatformSnapshot | null): Promise<void> {
+    const target = now - 24 * 3600_000;
+    const oldest = now - 7 * 24 * 3600_000;
+
+    const closes = new Map<string, DailyClose[]>();
+    await Promise.all(
+      [...this.entries.keys()].map(async (id) => {
+        closes.set(id, await this.loadRecentCloses(id));
+      })
+    );
+
+    for (const [id, entry] of this.entries) {
+      if (id === "melted18") continue;
+      const base = baselineClose(closes.get(id) ?? [], target, entry.price);
+      if (!base || base.ts < oldest) {
+        entry.change = null;
+        entry.changePct = null;
+        continue;
+      }
+      const diff = changeToClose(entry.price, base.close);
+      entry.change = diff.change;
+      entry.changePct = diff.changePct;
+    }
+
+    const meltedEntry = this.entries.get("melted18");
+    if (meltedEntry) {
+      let baseToman: number | null = null;
+      let baseTs = -Infinity;
+      for (const p of snapshot?.history ?? []) {
+        if (!Number.isFinite(p.t) || !Number.isFinite(p.p) || p.p <= 0) continue;
+        const ts = p.t * 1000;
+        if (ts <= target && ts > baseTs) {
+          baseTs = ts;
+          baseToman = p.p;
+        }
+      }
+      if (baseToman !== null && baseTs >= oldest) {
+        const diff = changeToClose(meltedEntry.price, baseToman * 10);
+        meltedEntry.change = diff.change;
+        meltedEntry.changePct = diff.changePct;
+      } else {
+        // Our own 24h history is still filling in; the platform quotes carry a
+        // real 24h change for this same instrument, used as the honest fallback.
+        const pct = snapshot?.item?.changePct ?? null;
+        const snapshotFresh =
+          snapshot !== null && now - snapshot.generatedAt <= this.quality.maxSnapshotAgeMs;
+        if (snapshotFresh && pct !== null && Number.isFinite(pct) && Math.abs(pct) < 20) {
+          meltedEntry.changePct = round(pct, 2);
+          meltedEntry.change = Math.round((meltedEntry.price * pct) / (100 + pct));
+        } else {
+          meltedEntry.change = null;
+          meltedEntry.changePct = null;
+        }
+      }
+    }
   }
 
   private recordTail(id: string, ts: number, price: number): void {
