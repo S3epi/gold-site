@@ -221,8 +221,10 @@ a:hover {
   animation: ticker-scroll 55s linear infinite;
 }
 
-.ticker:hover .ticker__track {
-  animation-play-state: paused;
+@media (hover: hover) and (pointer: fine) {
+  .ticker:hover .ticker__track {
+    animation-play-state: paused;
+  }
 }
 
 .ticker__group {
@@ -260,6 +262,181 @@ a:hover {
 .ticker__pct {
   font-size: 0.74rem;
   font-variant-numeric: tabular-nums;
+}
+
+/* ============ Site menu ============ */
+
+.menu {
+  position: relative;
+  flex: none;
+}
+
+.menu__btn {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(233, 196, 106, 0.06);
+  color: var(--gold-2);
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.menu__btn:hover {
+  background: rgba(233, 196, 106, 0.13);
+}
+
+.menu__btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.menu__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 72px 16px 24px;
+  background: rgba(3, 6, 12, 0.62);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.menu__panel {
+  width: min(460px, 100%);
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background:
+    radial-gradient(420px 160px at 90% 0%, rgba(233, 196, 106, 0.09), transparent 65%),
+    linear-gradient(180deg, #0e162b, #0a1122 70%);
+  box-shadow: var(--shadow);
+  animation: menu-in 0.16s ease;
+  outline: none;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.menu__head-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.menu__head-text strong {
+  font-size: 0.95rem;
+}
+
+.menu__head-text small {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.menu__close {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+  line-height: 1;
+  border-radius: 10px;
+  border: 1px solid var(--line-soft);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.menu__close:hover {
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.menu__links {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.menu__link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font-size: 0.84rem;
+  cursor: pointer;
+  text-align: start;
+}
+
+.menu__link:hover {
+  background: rgba(233, 196, 106, 0.09);
+  border-color: var(--line);
+  text-decoration: none;
+}
+
+.menu__link-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.menu__link-main svg {
+  width: 18px;
+  height: 18px;
+  color: var(--gold-2);
+  flex: none;
+}
+
+.menu__link small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.menu__link.is-off {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.menu__link.is-off:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: transparent;
+}
+
+.menu__calc {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
 }
 
 @keyframes ticker-scroll {
@@ -1022,9 +1199,45 @@ bdi {
 
 .calc-tool {
   scroll-margin-top: 130px;
-  background:
-    radial-gradient(600px 200px at 85% 0%, rgba(233, 196, 106, 0.08), transparent 60%),
-    var(--panel);
+}
+
+.calc-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.calc-sub {
+  margin: 3px 0 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.9;
+}
+
+.calc-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 3px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.calc-tab {
+  padding: 7px 14px;
+  border: none;
+  background: none;
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.calc-tab--active {
+  background: linear-gradient(120deg, var(--gold-2), var(--gold));
+  color: #0d1220;
+  font-weight: 700;
 }
 
 .calc-form {
@@ -1032,6 +1245,21 @@ bdi {
   grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
   align-items: end;
+}
+
+.calc-form--trade {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+.field--full {
+  grid-column: 1 / -1;
+}
+
+.field__opt {
+  font-style: normal;
+  font-size: 0.62rem;
+  opacity: 0.65;
 }
 
 .seg {
@@ -1129,6 +1357,150 @@ bdi {
   margin: 16px 0 0;
   font-size: 0.8rem;
   color: var(--muted);
+}
+
+.calc-rows {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.calc-rows li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.calc-rows li:nth-child(even) {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.calc-rows li > span {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+}
+
+.calc-rows li > span i {
+  font-style: normal;
+  font-size: 0.68rem;
+}
+
+.calc-rows b {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.calc-rows b i {
+  font-style: normal;
+  font-size: 0.64rem;
+  color: var(--muted);
+  margin-inline-start: 3px;
+}
+
+.calc-rows li.is-total {
+  background: rgba(233, 196, 106, 0.12);
+  border-block: 1px solid var(--line);
+}
+
+.calc-rows li.is-total > span {
+  color: var(--gold-2);
+  font-weight: 700;
+}
+
+.calc-rows li.is-profit > span i {
+  color: inherit;
+  opacity: 0.85;
+}
+
+/* ============ Owner panel ============ */
+
+.owner {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(3, 6, 12, 0.72);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  overflow-y: auto;
+}
+
+.owner__panel {
+  width: min(460px, 100%);
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #0e162b, #0a1122 70%);
+  box-shadow: var(--shadow);
+}
+
+.owner__panel h3 {
+  margin: 0;
+  font-size: 1.02rem;
+}
+
+.owner__sub {
+  margin: 6px 0 14px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.9;
+}
+
+.owner__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.owner__field input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-soft);
+  background: rgba(7, 11, 21, 0.6);
+  color: var(--text);
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.owner__field input:focus {
+  outline: none;
+  border-color: rgba(233, 196, 106, 0.55);
+}
+
+.owner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.owner__msg {
+  margin: 12px 0 0;
+  font-size: 0.74rem;
+  color: #9ef0c6;
+}
+
+.owner__hint {
+  margin: 12px 0 0;
+  font-size: 0.68rem;
+  color: var(--muted);
+  line-height: 1.9;
 }
 
 /* ============ Buttons ============ */
@@ -1232,6 +1604,35 @@ bdi {
   color: var(--gold-2);
 }
 
+.footer__clock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 9px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: rgba(233, 196, 106, 0.05);
+}
+
+.footer__date {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gold-2);
+}
+
+.footer__time {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.footer__tz {
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
 /* ============ Responsive ============ */
 
 @media (max-width: 1080px) {
@@ -1261,6 +1662,19 @@ bdi {
 @media (max-width: 640px) {
   .wrap {
     width: calc(100% - 24px);
+  }
+
+  .menu__overlay {
+    padding: 70px 12px 20px;
+  }
+
+  .menu__panel .field select,
+  .menu__panel .field input {
+    font-size: 1rem;
+  }
+
+  .footer__clock {
+    width: 100%;
   }
 
   .header__inner {

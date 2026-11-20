@@ -1,21 +1,24 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CATEGORY_TITLE, type PriceItem } from "@mesghalyar/shared";
 import { useMarket } from "./useMarket";
 import { useClock } from "./useClock";
 import { ChartPanel } from "./components/ChartPanel";
-import { Calculator } from "./components/Calculator";
+import { OwnerPanel } from "./components/OwnerPanel";
 import { PriceCard } from "./components/PriceCard";
+import { SiteMenu } from "./components/SiteMenu";
 import {
   bubbleClass,
   faNum,
   fmtAge,
   fmtClock,
   fmtDateTime,
+  fmtFullDate,
   fmtPct,
   fmtPrice,
   trendClass
 } from "./format";
 import { referenceNow } from "./serverClock";
+import { readChannel } from "./channel";
 
 const TICKER_IDS = [
   "gold18",
@@ -35,6 +38,25 @@ export default function App() {
   const clockNow = useClock();
   const [selectedId, setSelectedId] = useState("gold18");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [channel, setChannel] = useState<string | null>(() => readChannel());
+  const [ownerOpen, setOwnerOpen] = useState(false);
+  const brandTaps = useRef<number[]>([]);
+
+  useEffect(() => {
+    if (location.hash === "#owner") {
+      setOwnerOpen(true);
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+  }, []);
+
+  const tapBrand = (): void => {
+    const now = Date.now();
+    brandTaps.current = [...brandTaps.current.filter((t) => now - t < 2500), now];
+    if (brandTaps.current.length >= 5) {
+      brandTaps.current = [];
+      setOwnerOpen(true);
+    }
+  };
 
   const items = data?.items ?? [];
   const byId = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
@@ -48,9 +70,13 @@ export default function App() {
     (item): item is NonNullable<typeof item> => Boolean(item && item.price !== null)
   );
 
+  const scrollToSection = (id: string): void => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const openChart = (id: string): void => {
     setSelectedId(id);
-    document.getElementById("chart")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToSection("chart");
   };
 
   const freshness = (item: PriceItem | null | undefined): string => {
@@ -68,7 +94,7 @@ export default function App() {
       <header className="header">
         <div className="wrap header__inner">
           <div className="brand">
-            <span className="brand__mark" aria-hidden="true">
+            <span className="brand__mark" aria-hidden="true" onClick={tapBrand}>
               <svg viewBox="0 0 40 40" role="img">
                 <path
                   d="M20 3 33 11.5v17L20 37 7 28.5v-17L20 3Z"
@@ -96,6 +122,13 @@ export default function App() {
                 {clockNow === null ? "—" : fmtClock(new Date(clockNow))}
               </span>
             </div>
+            <SiteMenu
+              channel={channel}
+              calculations={calculations}
+              items={items}
+              onChart={() => scrollToSection("chart")}
+              onReference={() => scrollToSection("reference")}
+            />
           </div>
         </div>
 
@@ -190,8 +223,6 @@ export default function App() {
           </div>
         </section>
 
-        <Calculator calculations={calculations} items={items} />
-
         <BoardSection
           title={CATEGORY_TITLE.gold}
           hint="قیمت‌ها به تومان؛ آبشدهٔ بنکداری و مثقال به ازای هر مثقال"
@@ -253,7 +284,7 @@ export default function App() {
           refreshKey={refreshKey}
         />
 
-        <section className="panel calc-panel">
+        <section className="panel calc-panel" id="reference">
           <div className="panel__head">
             <div>
               <h2 className="panel__title">مرجع محاسباتی مثقال‌یار</h2>
@@ -315,6 +346,15 @@ export default function App() {
 
       <footer className="footer">
         <div className="wrap footer__inner">
+          <div className="footer__clock" aria-label="تاریخ و ساعت تهران">
+            <span className="footer__date">
+              {clockNow === null ? "—" : fmtFullDate(new Date(clockNow))}
+            </span>
+            <span className="footer__time" aria-live="off">
+              {clockNow === null ? "" : fmtClock(new Date(clockNow))}
+            </span>
+            <span className="footer__tz">به وقت تهران</span>
+          </div>
           <p className="footer__disclaimer">
             <strong>هشدار معامله:</strong> قیمت‌های این سایت صرفاً برای اطلاع و محاسبه است و نباید مبنای
             هیچ معامله‌ای قرار گیرد. مثقال‌یار تابلو و ابزار محاسبه است، نه کارگزاری یا مشاور مالی، و
@@ -322,6 +362,10 @@ export default function App() {
           </p>
         </div>
       </footer>
+
+      {ownerOpen ? (
+        <OwnerPanel onClose={() => setOwnerOpen(false)} onChannelChange={setChannel} />
+      ) : null}
     </div>
   );
 }

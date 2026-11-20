@@ -65,6 +65,46 @@ export function fmtClock(date = new Date()): string {
   }).format(date);
 }
 
+export function fmtFullDate(date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("fa-IR", {
+    timeZone: "Asia/Tehran",
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  }).formatToParts(date);
+  const part = (type: string): string => parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("weekday")}، ${part("day")} ${part("month")} ${part("year")}`;
+}
+
+const PERSIAN_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
+const ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+
+/** Reads user-typed numbers that may contain Persian/Arabic digits, separators or spaces. */
+export function parseNum(input: string): number {
+  let out = "";
+  for (const ch of input) {
+    const persian = PERSIAN_DIGITS.indexOf(ch);
+    if (persian >= 0) {
+      out += String(persian);
+      continue;
+    }
+    const arabic = ARABIC_DIGITS.indexOf(ch);
+    if (arabic >= 0) {
+      out += String(arabic);
+      continue;
+    }
+    if (ch === "," || ch === "٬" || ch === " " || ch === "\u200c") continue;
+    if (ch === "٫") {
+      out += ".";
+      continue;
+    }
+    out += ch;
+  }
+  const value = Number(out);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
 export function fmtAge(ts: number | null, now = Date.now()): string {
   if (!ts) return "—";
   const sec = Math.max(0, Math.floor((now - ts) / 1000));
