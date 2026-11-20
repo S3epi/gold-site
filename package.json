@@ -1,0 +1,25 @@
+{
+  "name": "zernama",
+  "version": "1.0.0",
+  "private": true,
+  "description": "زرنما — تابلوی قیمت طلا، سکه و ارز",
+  "workspaces": [
+    "shared",
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "build:shared": "npm run build -w shared",
+    "dev": "npm run build:shared && concurrently -k -n api,web -c yellow,cyan \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build:shared && npm run build -w web && npm run build -w server",
+    "start": "npm run start -w server",
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w server && npm run typecheck -w web",
+    "test": "npm run build:shared && vitest run"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "vitest": "^3.0.5"
+  }
+}
