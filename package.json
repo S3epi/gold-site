@@ -11,6 +11,7 @@
   "scripts": {
     "build:shared": "npm run build -w shared",
     "snapshot": "node scripts/snapshot.mjs",
+    "keepalive": "node scripts/keepalive.mjs",
     "dev": "npm run build:shared && concurrently -k -n api,web -c yellow,cyan \"npm:dev:server\" \"npm:dev:web\"",
     "dev:server": "npm run dev -w server",
     "dev:web": "npm run dev -w web",

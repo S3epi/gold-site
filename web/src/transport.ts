@@ -357,7 +357,7 @@ export class StaticTransport implements MarketTransport {
     const cached = this.historyCache.get(id);
     if (cached && performance.now() - cached.at < 10 * 60_000) return cached.rows;
     try {
-      const rows = await fetchTgjuHistory(TGJU_HISTORY_URL, inst.tgjuSlug, 25_000, 20_000);
+      const rows = await fetchTgjuHistory(TGJU_HISTORY_URL, inst.tgjuSlug, 12_000, 20_000);
       this.historyCache.set(id, { at: performance.now(), rows });
       return rows;
     } catch {

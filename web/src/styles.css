@@ -854,6 +854,7 @@ a:hover {
 }
 
 .chart-loading,
+.chart-empty,
 .chart-error {
   position: absolute;
   inset: 0;

@@ -17,7 +17,18 @@ import {
 } from "./format";
 import { referenceNow } from "./serverClock";
 
-const TICKER_IDS = ["gold18", "melted18", "gold24", "emami", "bahar", "usd", "eur", "xau"];
+const TICKER_IDS = [
+  "gold18",
+  "melted18",
+  "melted",
+  "mithqal",
+  "gold24",
+  "emami",
+  "bahar",
+  "usd",
+  "eur",
+  "xau"
+];
 
 export default function App() {
   const { data, error, mode, transport } = useMarket();

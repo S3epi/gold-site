@@ -50,6 +50,8 @@ export function ChartPanel({
   const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const dataKeyRef = useRef<string>("");
+  const precisionRef = useRef<0 | 2>(0);
+  const lastTimeRef = useRef<number>(-Infinity);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -94,7 +96,8 @@ export function ChartPanel({
       },
       localization: {
         locale: "fa-IR",
-        priceFormatter: (value: number) => faNum(Math.round(value))
+        priceFormatter: (value: number) =>
+          precisionRef.current ? faNum2(value) : faNum(Math.round(value))
       }
     });
 
@@ -139,9 +142,10 @@ export function ChartPanel({
         return;
       }
       const realMs = ((param.time as number) - TEHRAN_OFFSET_SEC) * 1000;
+      const shown = precisionRef.current ? faNum2(data.value) : faNum(Math.round(data.value));
       tip.innerHTML = `
         <div class="chart-tooltip__time">${fmtDateTime(realMs)}</div>
-        <div class="chart-tooltip__price">${faNum(Math.round(data.value))}</div>
+        <div class="chart-tooltip__price">${shown}</div>
       `;
       tip.hidden = false;
       const width = 168;
@@ -156,6 +160,8 @@ export function ChartPanel({
       chartRef.current = null;
       seriesRef.current = null;
       tooltipRef.current = null;
+      dataKeyRef.current = "";
+      lastTimeRef.current = -Infinity;
     };
   }, []);
 
@@ -163,6 +169,9 @@ export function ChartPanel({
     let cancelled = false;
     setLoading(true);
     setError(null);
+    // Drop the previous instrument's series so stale values cannot be read
+    // under the newly selected chip while the history request is in flight.
+    setPayload(null);
 
     const load = async (): Promise<void> => {
       try {
@@ -198,12 +207,27 @@ export function ChartPanel({
     const sameSelection = dataKeyRef.current === key;
     const range = sameSelection ? chart.timeScale().getVisibleLogicalRange() : null;
 
+    const nextPrecision: 0 | 2 = payload.instrument.unit === "USD" ? 2 : 0;
+    if (precisionRef.current !== nextPrecision) {
+      precisionRef.current = nextPrecision;
+      series.applyOptions({
+        priceFormat: {
+          type: "price",
+          precision: nextPrecision,
+          minMove: nextPrecision === 2 ? 0.01 : 1
+        }
+      });
+    }
+
     series.setData(
       payload.points.map((p) => ({
         time: (p.t + TEHRAN_OFFSET_SEC) as UTCTimestamp,
         value: p.p
       }))
     );
+    lastTimeRef.current = payload.points.length
+      ? payload.points[payload.points.length - 1].t
+      : -Infinity;
 
     if (range) {
       chart.timeScale().setVisibleLogicalRange(range);
@@ -212,6 +236,19 @@ export function ChartPanel({
     }
     dataKeyRef.current = key;
   }, [payload]);
+
+  // The board polls every 20 seconds; push each new real observation onto the
+  // series so the chart moves with the prices instead of waiting a minute.
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series || !payload || !liveItem) return;
+    if (liveItem.id !== payload.instrument.id) return;
+    if (liveItem.price === null || !liveItem.ts) return;
+    const t = Math.floor(liveItem.ts / 1000);
+    if (t <= lastTimeRef.current) return;
+    series.update({ time: (t + TEHRAN_OFFSET_SEC) as UTCTimestamp, value: liveItem.price });
+    lastTimeRef.current = t;
+  }, [liveItem, payload]);
 
   const resetView = (): void => {
     chartRef.current?.timeScale().fitContent();
@@ -282,6 +319,9 @@ export function ChartPanel({
           aria-label={`نمودار قیمت ${payload?.instrument.title ?? ""}`}
         />
         {loading && !payload ? <div className="chart-loading">در حال دریافت تاریخچه…</div> : null}
+        {!loading && payload && payload.points.length === 0 ? (
+          <div className="chart-empty">برای این بازه تاریخچهٔ ثبت‌شده‌ای موجود نیست</div>
+        ) : null}
         {error ? <div className="chart-error">{error}</div> : null}
       </div>
 

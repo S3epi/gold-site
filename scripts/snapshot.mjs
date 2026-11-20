@@ -85,7 +85,10 @@ async function buildAppTime() {
 
 async function loadPrevious() {
   try {
-    const res = await fetch(`${BASE}/api/v1/snapshot.json`, {
+    // Pages caches files for 10 minutes; the per-minute URL keeps the chain of
+    // history points intact when a deploy follows another within that window.
+    const bucket = Math.floor(Date.now() / 60_000);
+    const res = await fetch(`${BASE}/api/v1/snapshot.json?t=${bucket}`, {
       headers: { accept: "application/json" },
       signal: AbortSignal.timeout(15_000)
     });
