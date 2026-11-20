@@ -458,6 +458,18 @@ export class Engine {
     return disputed;
   }
 
+  private unverifiedSet(now: number): Set<string> {
+    const unverified = new Set<string>();
+    if (
+      this.platformConsensus &&
+      now - this.platformConsensus.ts < 15 * 60_000 &&
+      this.platformConsensus.sourcesCount < 2
+    ) {
+      unverified.add("melted18");
+    }
+    return unverified;
+  }
+
   platformsView(): { consensus: PlatformConsensusView | null; enabled: boolean } {
     return { consensus: this.platformConsensus, enabled: config.platforms.enabled };
   }
@@ -477,7 +489,8 @@ export class Engine {
   prices(): PricesPayload {
     const now = this.now();
     const items = buildPriceItems(this.buildEntries(), now, this.quality(), {
-      disputed: this.disputedSet(now)
+      disputed: this.disputedSet(now),
+      unverified: this.unverifiedSet(now)
     });
     return {
       ok: true,

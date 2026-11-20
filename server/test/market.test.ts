@@ -186,6 +186,26 @@ describe("buildPriceItems", () => {
     expect(disputed.find((i) => i.id === "melted18")?.status).toBe("DISPUTED");
   });
 
+  it("labels single-source values unverified without hiding staleness", () => {
+    const fresh = new Map<string, LiveEntry | null>([
+      ["melted18", { price: 236_420_000, ts: now, receivedAt: now, source: "platforms" }]
+    ]);
+    expect(
+      buildPriceItems(fresh, now, quality, { unverified: new Set(["melted18"]) }).find(
+        (i) => i.id === "melted18"
+      )?.status
+    ).toBe("UNVERIFIED");
+
+    const old = new Map<string, LiveEntry | null>([
+      ["melted18", { price: 236_420_000, ts: now - 20 * 60_000, receivedAt: now, source: "platforms" }]
+    ]);
+    expect(
+      buildPriceItems(old, now, quality, { unverified: new Set(["melted18"]) }).find(
+        (i) => i.id === "melted18"
+      )?.status
+    ).toBe("STALE");
+  });
+
   it("marks missing instruments unavailable without inventing prices", () => {
     const items = buildPriceItems(new Map(), now, quality);
     for (const item of items) {

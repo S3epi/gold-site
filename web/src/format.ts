@@ -78,7 +78,8 @@ export const STATUS_LABEL: Record<MarketStatus, string> = {
   DELAYED: "تأخیری",
   STALE: "کهنه",
   UNAVAILABLE: "ناموجود",
-  DISPUTED: "اختلاف منابع"
+  DISPUTED: "اختلاف منابع",
+  UNVERIFIED: "تک‌منبع"
 };
 
 export const STATUS_HINT: Record<MarketStatus, string> = {
@@ -86,7 +87,8 @@ export const STATUS_HINT: Record<MarketStatus, string> = {
   DELAYED: "قیمت منبع روزانه/با تأخیر به‌روز می‌شود",
   STALE: "آخرین مقدار معتبر؛ به‌روزرسانی جدید نرسیده",
   UNAVAILABLE: "منبع معتبری برای این مورد در دسترس نیست",
-  DISPUTED: "اختلاف بین منابع بیش از حد مجاز است"
+  DISPUTED: "اختلاف بین منابع بیش از حد مجاز است",
+  UNVERIFIED: "قیمت واقعی است اما فقط یک منبع مستقل تأییدش کرده"
 };
 
 export function trendClass(changePct: number | null): "up" | "down" | "flat" {

@@ -201,6 +201,9 @@ export class StaticTransport implements MarketTransport {
       });
       this.forced.set("melted18", age > this.quality.staleAfterMs ? "STALE" : "DELAYED");
       if (melted.disputed) this.forced.set("melted18", "DISPUTED");
+      else if (melted.sourcesCount < 2 && age <= this.quality.staleAfterMs) {
+        this.forced.set("melted18", "UNVERIFIED");
+      }
       this.recordTail("melted18", ts, melted.priceRial);
     }
 

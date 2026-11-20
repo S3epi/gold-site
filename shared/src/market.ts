@@ -35,6 +35,8 @@ export function statusOf(ts: number | null, now: number, q: Quality): MarketStat
 
 export interface BuildOptions {
   disputed?: Set<string>;
+  /** Values that could not be confirmed by at least two independent sources. */
+  unverified?: Set<string>;
   forcedStatus?: Record<string, MarketStatus>;
   mode?: "server" | "static";
 }
@@ -55,6 +57,9 @@ export function buildPriceItems(
     let status: MarketStatus = entry ? statusOf(entry.ts, now, quality) : "UNAVAILABLE";
     if (entry && opts.forcedStatus?.[inst.id]) status = opts.forcedStatus[inst.id];
     if (entry && opts.disputed?.has(inst.id)) status = "DISPUTED";
+    if (entry && opts.unverified?.has(inst.id) && status !== "DISPUTED" && status !== "STALE") {
+      status = "UNVERIFIED";
+    }
 
     return {
       id: inst.id,

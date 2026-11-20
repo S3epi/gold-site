@@ -18,7 +18,7 @@ export interface HistoryPoint {
   price: number;
 }
 
-export type MarketStatus = "LIVE" | "DELAYED" | "STALE" | "UNAVAILABLE" | "DISPUTED";
+export type MarketStatus = "LIVE" | "DELAYED" | "STALE" | "UNAVAILABLE" | "DISPUTED" | "UNVERIFIED";
 
 export interface Quality {
   staleAfterMs: number;
