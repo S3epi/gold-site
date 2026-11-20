@@ -22,6 +22,14 @@ const COIN_OPTIONS = ["emami", "bahar", "half", "quarter"].map((id) => ({
 type Tab = "trade" | "intrinsic";
 type Mode = "gold" | "coin";
 
+interface TradeFields {
+  weight: string;
+  buy: string;
+  sell: string;
+  wage: string;
+  taxRate: string;
+}
+
 export function Calculator({
   calculations,
   items
@@ -30,6 +38,15 @@ export function Calculator({
   items: PriceItem[];
 }) {
   const [tab, setTab] = useState<Tab>("trade");
+  const [fields, setFields] = useState<TradeFields>({
+    weight: "1",
+    buy: "",
+    sell: "",
+    wage: "",
+    taxRate: ""
+  });
+  const setField = (key: keyof TradeFields) => (value: string) =>
+    setFields((prev) => ({ ...prev, [key]: value }));
 
   return (
     <div className="calc-tool">
@@ -60,7 +77,7 @@ export function Calculator({
       </div>
 
       {tab === "trade" ? (
-        <TradeTab items={items} />
+        <TradeTab items={items} fields={fields} setField={setField} />
       ) : (
         <IntrinsicTab calculations={calculations} items={items} />
       )}
@@ -68,12 +85,16 @@ export function Calculator({
   );
 }
 
-function TradeTab({ items }: { items: PriceItem[] }) {
-  const [weight, setWeight] = useState("1");
-  const [buy, setBuy] = useState("");
-  const [sell, setSell] = useState("");
-  const [wage, setWage] = useState("");
-  const [taxRate, setTaxRate] = useState("");
+function TradeTab({
+  items,
+  fields,
+  setField
+}: {
+  items: PriceItem[];
+  fields: TradeFields;
+  setField: (key: keyof TradeFields) => (value: string) => void;
+}) {
+  const { weight, buy, sell, wage, taxRate } = fields;
 
   const liveGold = items.find((i) => i.id === "gold18" && i.price !== null)?.price ?? null;
 
@@ -103,7 +124,7 @@ function TradeTab({ items }: { items: PriceItem[] }) {
             inputMode="decimal"
             value={weight}
             placeholder="۱"
-            onChange={(e) => setWeight(e.target.value)}
+            onChange={(e) => setField("weight")(e.target.value)}
           />
         </label>
         <label className="field">
@@ -113,7 +134,7 @@ function TradeTab({ items }: { items: PriceItem[] }) {
             inputMode="decimal"
             value={buy}
             placeholder={liveGold !== null ? fmtPrice(liveGold, "TOMAN") : "مثلاً ۷٬۰۰۰٬۰۰۰"}
-            onChange={(e) => setBuy(e.target.value)}
+            onChange={(e) => setField("buy")(e.target.value)}
           />
         </label>
         <label className="field">
@@ -125,7 +146,7 @@ function TradeTab({ items }: { items: PriceItem[] }) {
             inputMode="decimal"
             value={sell}
             placeholder={liveGold !== null ? fmtPrice(liveGold, "TOMAN") : "برای دیدن سود یا زیان"}
-            onChange={(e) => setSell(e.target.value)}
+            onChange={(e) => setField("sell")(e.target.value)}
           />
         </label>
         <label className="field">
@@ -137,7 +158,7 @@ function TradeTab({ items }: { items: PriceItem[] }) {
             inputMode="decimal"
             value={wage}
             placeholder="مثلاً ۲۰۰٬۰۰۰"
-            onChange={(e) => setWage(e.target.value)}
+            onChange={(e) => setField("wage")(e.target.value)}
           />
         </label>
         <label className="field field--full">
@@ -149,7 +170,7 @@ function TradeTab({ items }: { items: PriceItem[] }) {
             inputMode="decimal"
             value={taxRate}
             placeholder="نرخ را خودتان وارد کنید؛ مثلاً ۹"
-            onChange={(e) => setTaxRate(e.target.value)}
+            onChange={(e) => setField("taxRate")(e.target.value)}
           />
         </label>
       </div>
