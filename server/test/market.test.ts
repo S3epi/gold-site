@@ -233,4 +233,16 @@ describe("aggregateChartPoints", () => {
     expect(bucketed.length).toBeLessThanOrEqual(4);
     expect(bucketed[bucketed.length - 1]).toEqual({ t: 9, p: 10 });
   });
+
+  it("keeps a single point per second so chart times stay unique", () => {
+    const points = [
+      { ts: 1_000_100, price: 10 },
+      { ts: 1_000_900, price: 12 },
+      { ts: 1_002_000, price: 11 }
+    ];
+    expect(aggregateChartPoints(points)).toEqual([
+      { t: 1000, p: 12 },
+      { t: 1002, p: 11 }
+    ]);
+  });
 });

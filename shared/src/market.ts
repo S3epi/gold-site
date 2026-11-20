@@ -196,6 +196,7 @@ export function computeCalculations(items: PriceItem[]): CalculationsPayload {
 /**
  * Reduces points to at most `maxPoints` by keeping the last real observation
  * of each time bucket. No synthetic/interpolated values are produced.
+ * The result has one point per second: chart libraries reject duplicate times.
  */
 export function aggregateChartPoints(
   points: { ts: number; price: number }[],
@@ -206,7 +207,9 @@ export function aggregateChartPoints(
     .sort((a, b) => a.ts - b.ts);
 
   if (sorted.length <= maxPoints) {
-    return sorted.map((p) => ({ t: Math.floor(p.ts / 1000), p: round(p.price, 2) }));
+    return compactSeconds(
+      sorted.map((p) => ({ t: Math.floor(p.ts / 1000), p: round(p.price, 2) }))
+    );
   }
 
   const from = sorted[0].ts;
@@ -224,6 +227,16 @@ export function aggregateChartPoints(
     } else {
       out[out.length - 1] = converted;
     }
+  }
+  return compactSeconds(out);
+}
+
+function compactSeconds(points: ChartPoint[]): ChartPoint[] {
+  const out: ChartPoint[] = [];
+  for (const point of points) {
+    const last = out[out.length - 1];
+    if (last && last.t === point.t) out[out.length - 1] = point;
+    else out.push(point);
   }
   return out;
 }
