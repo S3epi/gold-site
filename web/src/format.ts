@@ -65,16 +65,15 @@ export function fmtClock(date = new Date()): string {
   }).format(date);
 }
 
-export function fmtFullDate(date = new Date()): string {
+export function fmtDate(date = new Date()): string {
   const parts = new Intl.DateTimeFormat("fa-IR", {
     timeZone: "Asia/Tehran",
-    weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric"
   }).formatToParts(date);
   const part = (type: string): string => parts.find((p) => p.type === type)?.value ?? "";
-  return `${part("weekday")}، ${part("day")} ${part("month")} ${part("year")}`;
+  return `${part("day")} ${part("month")} ${part("year")}`;
 }
 
 const PERSIAN_DIGITS = "۰۱۲۳۴۵۶۷۸۹";

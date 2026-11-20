@@ -7,16 +7,40 @@ const STORE_KEY = "mesghalyar.telegram.v1";
 const DEFAULT_CHANNEL = "";
 
 const USERNAME = /^[A-Za-z][A-Za-z0-9_]{3,31}$/;
-const URL_SHAPE = /^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\/([A-Za-z][A-Za-z0-9_]{3,31})\/?$/i;
+const TELEGRAM_URL =
+  /^(?:https?:\/\/)?(?:www\.)?(?:t|telegram)\.me\/([^\s?#]+)(?:[?#].*)?\/?$/i;
 
-/** Accepts "@name", "name", "t.me/name" or a full Telegram link and returns the canonical https link. */
+/** Accepts "@name", "name", or any t.me link (channel, post, preview or invite) and returns a canonical link. */
 export function normalizeChannel(input: string): string | null {
   const raw = input.trim();
   if (!raw) return null;
-  const fromUrl = raw.match(URL_SHAPE);
-  if (fromUrl) return `https://t.me/${fromUrl[1]}`;
+  const fromUrl = raw.match(TELEGRAM_URL);
+  if (fromUrl) return normalizePath(fromUrl[1]);
   const name = raw.startsWith("@") ? raw.slice(1) : raw;
   return USERNAME.test(name) ? `https://t.me/${name}` : null;
+}
+
+function normalizePath(path: string): string | null {
+  const clean = path.replace(/^\/+|\/+$/g, "");
+  if (!clean) return null;
+  const parts = clean.split("/");
+  const head = parts[0] ?? "";
+
+  if (head.startsWith("+")) {
+    return parts.length === 1 && /^\+[A-Za-z0-9_-]{10,}$/.test(head) ? `https://t.me/${head}` : null;
+  }
+  if (head === "joinchat") {
+    return parts.length === 2 && /^[A-Za-z0-9_-]{8,}$/.test(parts[1] ?? "")
+      ? `https://t.me/joinchat/${parts[1]}`
+      : null;
+  }
+  if (head === "s" && parts.length === 2 && USERNAME.test(parts[1] ?? "")) {
+    return `https://t.me/${parts[1]}`;
+  }
+  if (!USERNAME.test(head)) return null;
+  if (parts.length === 1) return `https://t.me/${head}`;
+  if (parts.length === 2 && /^\d+$/.test(parts[1] ?? "")) return `https://t.me/${head}/${parts[1]}`;
+  return null;
 }
 
 export function readChannel(): string | null {
@@ -42,6 +66,7 @@ export function writeChannel(value: string | null): void {
 }
 
 export function channelUsername(url: string): string {
-  const match = url.match(/t\.me\/([A-Za-z0-9_]+)/);
+  if (/t\.me\/(?:\+|joinchat\/)/i.test(url)) return url.replace(/^https?:\/\//, "");
+  const match = url.match(/t\.me\/(?:s\/)?([A-Za-z0-9_]+)/i);
   return match ? `@${match[1]}` : url;
 }

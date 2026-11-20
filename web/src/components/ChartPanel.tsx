@@ -19,6 +19,7 @@ import {
 } from "@mesghalyar/shared";
 import type { MarketTransport } from "../transport";
 import { faNum, faNum2, fmtDateTime, fmtPct, fmtPrice, fmtTime } from "../format";
+import { FlashNumber } from "./FlashNumber";
 
 // Times are shifted so the chart's UTC axis reads as Tehran local time.
 const TEHRAN_OFFSET_SEC = 12_600;
@@ -329,7 +330,9 @@ export function ChartPanel({
       <dl className="chart-stats">
         <div>
           <dt>قیمت فعلی</dt>
-          <dd>{fmtPrice(liveItem?.price ?? last, unit)}</dd>
+          <dd>
+            <FlashNumber value={liveItem?.price ?? last} unit={unit} />
+          </dd>
         </div>
         <div>
           <dt>تغییر ۲۴ ساعته</dt>

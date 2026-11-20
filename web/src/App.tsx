@@ -3,6 +3,7 @@ import { CATEGORY_TITLE, type PriceItem } from "@mesghalyar/shared";
 import { useMarket } from "./useMarket";
 import { useClock } from "./useClock";
 import { ChartPanel } from "./components/ChartPanel";
+import { FlashNumber } from "./components/FlashNumber";
 import { OwnerPanel } from "./components/OwnerPanel";
 import { PriceCard } from "./components/PriceCard";
 import { SiteMenu } from "./components/SiteMenu";
@@ -11,14 +12,15 @@ import {
   faNum,
   fmtAge,
   fmtClock,
+  fmtDate,
   fmtDateTime,
-  fmtFullDate,
   fmtPct,
   fmtPrice,
   trendClass
 } from "./format";
 import { referenceNow } from "./serverClock";
 import { readChannel } from "./channel";
+import { useFlash } from "./useFlash";
 
 const TICKER_IDS = [
   "gold18",
@@ -121,6 +123,9 @@ export default function App() {
               <span className="clock__time" aria-live="off">
                 {clockNow === null ? "—" : fmtClock(new Date(clockNow))}
               </span>
+              <span className="clock__date" aria-live="off">
+                {clockNow === null ? "" : fmtDate(new Date(clockNow))}
+              </span>
             </div>
             <SiteMenu
               channel={channel}
@@ -146,9 +151,7 @@ export default function App() {
                       tabIndex={copy === 1 ? -1 : 0}
                     >
                       <span className="ticker__name">{item.short}</span>
-                      <span className="ticker__price">
-                        <bdi>{fmtPrice(item.price, item.unit)}</bdi>
-                      </span>
+                      <FlashNumber className="ticker__price" value={item.price} unit={item.unit} />
                       <span
                         className={`ticker__pct ${trendClass(item.changePct)}`}
                         title="تغییر در ۲۴ ساعت گذشته"
@@ -199,6 +202,7 @@ export default function App() {
               value={data?.usd ? fmtPrice(data.usd.price, "TOMAN") : "—"}
               sub={data?.usd ? `تومان · ${freshness(data.usd)}` : "در دسترس نیست"}
               tone={trendClass(data?.usd?.changePct ?? null)}
+              flashValue={data?.usd?.price ?? null}
               onClick={() => openChart("usd")}
             />
             <StatTile
@@ -206,6 +210,7 @@ export default function App() {
               value={data?.ounce ? fmtPrice(data.ounce.price, "USD") : "—"}
               sub={data?.ounce ? `دلار · ${freshness(data.ounce)}` : "در دسترس نیست"}
               tone={trendClass(data?.ounce?.changePct ?? null)}
+              flashValue={data?.ounce?.price ?? null}
               onClick={() => openChart("xau")}
             />
             <StatTile
@@ -255,9 +260,7 @@ export default function App() {
                 <li key={item.id}>
                   <button type="button" className="currency-row" onClick={() => openChart(item.id)}>
                     <span className="currency-row__name">{item.title}</span>
-                    <span className="currency-row__price">
-                      <bdi>{fmtPrice(item.price, item.unit)}</bdi>
-                    </span>
+                    <FlashNumber className="currency-row__price" value={item.price} unit={item.unit} />
                     <span
                       className={`currency-row__pct ${trendClass(item.changePct)}`}
                       title="تغییر در ۲۴ ساعت گذشته"
@@ -346,15 +349,6 @@ export default function App() {
 
       <footer className="footer">
         <div className="wrap footer__inner">
-          <div className="footer__clock" aria-label="تاریخ و ساعت تهران">
-            <span className="footer__date">
-              {clockNow === null ? "—" : fmtFullDate(new Date(clockNow))}
-            </span>
-            <span className="footer__time" aria-live="off">
-              {clockNow === null ? "" : fmtClock(new Date(clockNow))}
-            </span>
-            <span className="footer__tz">به وقت تهران</span>
-          </div>
           <p className="footer__disclaimer">
             <strong>هشدار معامله:</strong> قیمت‌های این سایت صرفاً برای اطلاع و محاسبه است و نباید مبنای
             هیچ معامله‌ای قرار گیرد. مثقال‌یار تابلو و ابزار محاسبه است، نه کارگزاری یا مشاور مالی، و
@@ -424,18 +418,21 @@ function StatTile({
   value,
   sub,
   tone,
+  flashValue,
   onClick
 }: {
   title: string;
   value: string;
   sub: string;
   tone: "up" | "down" | "flat";
+  flashValue?: number | null;
   onClick?: () => void;
 }) {
+  const flash = useFlash(flashValue ?? null);
   const body = (
     <>
       <span className="tile__title">{title}</span>
-      <span className={`tile__value ${tone}`}>{value}</span>
+      <span className={`tile__value ${tone}${flash ? ` flash flash--${flash}` : ""}`}>{value}</span>
       <span className="tile__sub">{sub}</span>
     </>
   );

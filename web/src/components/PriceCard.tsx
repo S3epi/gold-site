@@ -7,10 +7,10 @@ import {
   faNum,
   fmtChange,
   fmtPct,
-  fmtPrice,
   fmtTime,
   trendClass
 } from "../format";
+import { FlashNumber } from "./FlashNumber";
 
 interface Props {
   item: PriceItem;
@@ -63,7 +63,7 @@ export function PriceCard({ item, featured = false, onSelect }: Props) {
       </header>
 
       <div className="card__price">
-        <span className="card__value">{fmtPrice(item.price, item.unit)}</span>
+        <FlashNumber className="card__value" value={item.price} unit={item.unit} />
         <span className="card__unit">{item.unit === "TOMAN" ? "تومان" : "دلار"}</span>
       </div>
 
