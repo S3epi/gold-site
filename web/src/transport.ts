@@ -90,7 +90,10 @@ export class StaticTransport implements MarketTransport {
   private forced = new Map<string, MarketStatus>();
   private tails = new Map<string, HistoryPoint[]>();
   private historyCache = new Map<string, { at: number; rows: HistoryPoint[] }>();
-  private snapshotCache: { at: number; data: PlatformSnapshot | null } = { at: 0, data: null };
+  private snapshotCache: { at: number; data: PlatformSnapshot | null } = {
+    at: Number.NEGATIVE_INFINITY,
+    data: null
+  };
   private quality = {
     staleAfterMs: 30 * 60_000,
     liveWithinMs: 180_000,
