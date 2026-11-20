@@ -1,4 +1,4 @@
-import type { MarketStatus } from "@zernama/shared";
+import type { MarketStatus } from "@mesghalyar/shared";
 
 const faInt = new Intl.NumberFormat("fa-IR");
 const faTwo = new Intl.NumberFormat("fa-IR", {
@@ -92,4 +92,10 @@ export const STATUS_HINT: Record<MarketStatus, string> = {
 export function trendClass(changePct: number | null): "up" | "down" | "flat" {
   if (changePct === null || !Number.isFinite(changePct) || changePct === 0) return "flat";
   return changePct > 0 ? "up" : "down";
+}
+
+/** In the gold market a positive bubble means price above intrinsic value. */
+export function bubbleClass(bubblePct: number | null): "up" | "down" | "flat" {
+  if (bubblePct === null || !Number.isFinite(bubblePct) || bubblePct === 0) return "flat";
+  return bubblePct > 0 ? "down" : "up";
 }

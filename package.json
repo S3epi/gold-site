@@ -1,8 +1,8 @@
 {
-  "name": "zernama",
+  "name": "mesghalyar",
   "version": "1.0.0",
   "private": true,
-  "description": "زرنما — تابلوی قیمت طلا، سکه و ارز",
+  "description": "مثقال‌یار — تابلو و محاسبهٔ دقیق قیمت طلا، سکه و ارز",
   "workspaces": [
     "shared",
     "server",

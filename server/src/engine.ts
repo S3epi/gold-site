@@ -19,7 +19,7 @@ import {
   type PricesPayload,
   type Quality,
   type Quote
-} from "@zernama/shared";
+} from "@mesghalyar/shared";
 import { config } from "./config.js";
 import { Storage } from "./db.js";
 import { NobitexProvider } from "./providers/nobitex.js";

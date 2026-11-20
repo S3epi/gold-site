@@ -16,7 +16,7 @@ import {
   type HistoryPayload,
   type Period,
   type PriceItem
-} from "@zernama/shared";
+} from "@mesghalyar/shared";
 import type { MarketTransport } from "../transport";
 import { faNum, faNum2, fmtDateTime, fmtPct, fmtPrice, fmtTime } from "../format";
 
@@ -316,7 +316,6 @@ export function ChartPanel({
 
       <div className="chart-meta">
         <span>آخرین مشاهده: {fmtTime(payload?.meta.lastTs ?? null)}</span>
-        <span>منبع: {payload?.meta.source ?? "—"}</span>
         <span>
           بازه: {payload ? `${fmtDateTime(payload.range.from)} تا ${fmtDateTime(payload.range.to)}` : "—"}
         </span>

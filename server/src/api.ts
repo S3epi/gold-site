@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { isPeriod, INSTRUMENT_BY_ID } from "@zernama/shared";
+import { isPeriod, INSTRUMENT_BY_ID } from "@mesghalyar/shared";
 import { config } from "./config.js";
 import type { Engine } from "./engine.js";
 

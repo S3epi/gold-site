@@ -1,4 +1,4 @@
-import { parseNumber, type UsdCross } from "@zernama/shared";
+import { parseNumber, type UsdCross } from "@mesghalyar/shared";
 import { config } from "../config.js";
 import { fetchJson } from "../util.js";
 

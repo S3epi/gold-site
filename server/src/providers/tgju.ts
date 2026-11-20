@@ -8,7 +8,7 @@ import {
   type HistoryPoint,
   type Instrument,
   type Quote
-} from "@zernama/shared";
+} from "@mesghalyar/shared";
 import { config } from "../config.js";
 import { fetchJson } from "../util.js";
 

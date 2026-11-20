@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { PricesPayload } from "@zernama/shared";
+import type { PricesPayload } from "@mesghalyar/shared";
 import { createTransport, type MarketTransport } from "./transport";
 
 const POLL_MS = 20_000;

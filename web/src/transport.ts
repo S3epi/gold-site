@@ -6,6 +6,7 @@ import {
   buildPriceItems,
   computeCalculations,
   fetchGoldOunce,
+  fetchJson,
   fetchTgjuHistory,
   fetchTgjuWidget,
   periodStart,
@@ -17,12 +18,33 @@ import {
   type Period,
   type PeriodAvailability,
   type PricesPayload
-} from "@zernama/shared";
+} from "@mesghalyar/shared";
 
 const BASE = import.meta.env.BASE_URL;
 const TGJU_WIDGET_URL = "https://api.tgju.org/v1/widget/tmp";
 const TGJU_HISTORY_URL = "https://api.tgju.org/v1/market/indicator/summary-table-data";
 const GOLDAPI_URL = "https://api.gold-api.com/price/XAU";
+const PAXG_URL =
+  "https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd&include_last_updated_at=true";
+
+async function fetchPaxgOunce(
+  url: string,
+  timeoutMs: number
+): Promise<{ price: number; ts: number; source: string }> {
+  const json = (await fetchJson(url, timeoutMs, { accept: "application/json" })) as {
+    "pax-gold"?: { usd?: number; last_updated_at?: number };
+  } | null;
+  const row = json?.["pax-gold"];
+  const price = row?.usd;
+  if (typeof price !== "number" || !Number.isFinite(price) || price < 500 || price > 20_000) {
+    throw new Error("paxg: implausible price");
+  }
+  return {
+    price,
+    ts: row?.last_updated_at ? row.last_updated_at * 1000 : Date.now(),
+    source: "gold reference"
+  };
+}
 
 export interface MarketTransport {
   mode: "server" | "static";
@@ -72,10 +94,13 @@ export class StaticTransport implements MarketTransport {
     const domesticKeys = INSTRUMENTS.filter((i) => i.tgjuKey).map((i) => i.tgjuKey as string);
     const extraKeys = ["tether_gold_xaut", "ons"];
 
-    const [widget, intl] = await Promise.all([
+    const [widget, goldFirst, paxg] = await Promise.all([
       fetchTgjuWidget(TGJU_WIDGET_URL, [...domesticKeys, ...extraKeys], 15_000).catch(() => null),
-      fetchGoldOunce(GOLDAPI_URL, 15_000, now).catch(() => null)
+      fetchGoldOunce(GOLDAPI_URL, 15_000, now).catch(() => null),
+      fetchPaxgOunce(PAXG_URL, 15_000).catch(() => null)
     ]);
+
+    const intl = goldFirst ?? paxg;
 
     let domesticOk = false;
     let intlOk = false;

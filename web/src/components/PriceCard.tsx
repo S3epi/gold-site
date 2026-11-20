@@ -1,7 +1,8 @@
-import type { PriceItem } from "@zernama/shared";
+import type { PriceItem } from "@mesghalyar/shared";
 import {
   STATUS_HINT,
   STATUS_LABEL,
+  bubbleClass,
   fmtChange,
   fmtPct,
   fmtPrice,
@@ -73,22 +74,29 @@ export function PriceCard({ item, featured = false, staticMode = false, onSelect
 
       {bubble ? (
         <div className="card__calc">
-          <span>حباب نظری</span>
-          <b className={trendClass(bubble.bubblePct ?? null)}>
-            {fmtPct(bubble.bubblePct ?? null)}
-          </b>
+          <span>حباب</span>
+          <span className="card__calc-val">
+            <b className={bubbleClass(bubble.bubblePct ?? null)}>
+              {fmtPct(bubble.bubblePct ?? null)}
+            </b>
+            <span className="muted">{fmtChange(bubble.bubbleToman ?? null, "TOMAN")} ت</span>
+          </span>
         </div>
       ) : reference ? (
         <div className="card__calc">
-          <span>مرجع محاسباتی</span>
-          <b>{fmtPrice(reference.referenceToman ?? null, "TOMAN")}</b>
+          <span>حباب</span>
+          <span className="card__calc-val">
+            <b className={bubbleClass(reference.premiumPct ?? null)}>
+              {fmtPct(reference.premiumPct ?? null)}
+            </b>
+            <span className="muted">{fmtChange(reference.premiumToman ?? null, "TOMAN")} ت</span>
+          </span>
         </div>
       ) : null}
 
       <footer className="card__foot">
-        <span className="card__source">{item.source ?? "منبع نامشخص"}</span>
         <time>
-          {staticMode && item.status === "DELAYED" ? "مظنه روزانه منبع" : fmtTime(item.ts)}
+          {staticMode && item.status === "DELAYED" ? "مظنه با تأخیر" : fmtTime(item.ts)}
         </time>
       </footer>
     </article>

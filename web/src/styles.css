@@ -1,4 +1,4 @@
-/* ============ ZerNama — navy & gold price board ============ */
+/* ============ MesghalYar — navy & gold price board ============ */
 
 :root {
   --bg: #070b15;
@@ -517,6 +517,17 @@ a:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.card__calc-val {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.card__calc-val .muted {
+  font-size: 0.68rem;
+}
+
 .card__note {
   margin: 0;
   font-size: 0.74rem;
@@ -1013,6 +1024,119 @@ a:hover {
   font-variant-numeric: tabular-nums;
 }
 
+/* ============ Calculator ============ */
+
+.calc-tool {
+  scroll-margin-top: 130px;
+  background:
+    radial-gradient(600px 200px at 85% 0%, rgba(233, 196, 106, 0.08), transparent 60%),
+    var(--panel);
+}
+
+.calc-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.seg {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.seg__btn {
+  padding: 7px 18px;
+  border: none;
+  background: none;
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease;
+}
+
+.seg__btn--active {
+  background: linear-gradient(120deg, var(--gold-2), var(--gold));
+  color: #0d1220;
+  font-weight: 700;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.field select,
+.field input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-soft);
+  background: rgba(7, 11, 21, 0.6);
+  color: var(--text);
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.field select:focus,
+.field input:focus {
+  outline: none;
+  border-color: rgba(233, 196, 106, 0.55);
+}
+
+.calc-result {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.calc-result > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(233, 196, 106, 0.05);
+  border: 1px solid rgba(233, 196, 106, 0.16);
+  min-width: 0;
+}
+
+.calc-result span {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.calc-result strong {
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calc-result i {
+  font-style: normal;
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
+.calc-empty {
+  margin: 16px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 /* ============ Buttons ============ */
 
 .btn {
@@ -1189,6 +1313,14 @@ a:hover {
 
   .calc-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .calc-form {
+    grid-template-columns: 1fr;
+  }
+
+  .calc-result {
+    grid-template-columns: 1fr;
   }
 
   .panel {

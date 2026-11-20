@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { CATEGORY_TITLE, type PriceItem } from "@zernama/shared";
+import { CATEGORY_TITLE, type PriceItem } from "@mesghalyar/shared";
 import { useMarket } from "./useMarket";
 import { ChartPanel } from "./components/ChartPanel";
+import { Calculator } from "./components/Calculator";
 import { PriceCard } from "./components/PriceCard";
 import {
+  bubbleClass,
   faNum,
   fmtAge,
   fmtClock,
@@ -45,15 +47,13 @@ export default function App() {
 
   const freshness = (item: PriceItem | null | undefined): string => {
     if (!item || !item.ts) return "در دسترس نیست";
-    if (mode === "static" && item.status === "DELAYED") return "مظنه روزانه منبع";
+    if (mode === "static" && item.status === "DELAYED") return "مظنه با تأخیر";
     return fmtAge(item.ts, now.getTime());
   };
 
   const networkWarning =
-    data && data.network.overall !== "ALL_CONNECTED"
-      ? data.network.overall === "ALL_PROVIDERS_UNAVAILABLE"
-        ? "هیچ منبع قیمتی در حال حاضر پاسخ نمی‌دهد؛ آخرین مقادیر معتبر (در صورت وجود) با وضعیت کهنه نمایش داده می‌شوند."
-        : "بخشی از منابع در دسترس نیست؛ برخی اقلام با آخرین مقدار معتبر یا وضعیت تأخیری نمایش داده می‌شوند."
+    data && data.network.overall === "ALL_PROVIDERS_UNAVAILABLE"
+      ? "در حال حاضر دادهٔ زنده‌ای از بازار دریافت نشد؛ در صورت وجود آخرین مقدار معتبر، با وضعیت کهنه نمایش داده می‌شود."
       : null;
 
   return (
@@ -77,8 +77,8 @@ export default function App() {
               </svg>
             </span>
             <span className="brand__text">
-              <strong>زرنما</strong>
-              <small>تابلوی قیمت طلا، سکه و ارز</small>
+              <strong>مثقال‌یار</strong>
+              <small>تابلو و محاسبهٔ دقیق بازار طلا</small>
             </span>
           </div>
 
@@ -89,16 +89,6 @@ export default function App() {
                 {fmtClock(now)}
               </span>
             </div>
-            <span
-              className={`mode-pill mode-pill--${mode ?? "none"}`}
-              title="منبع اتصال داده‌ها"
-            >
-              {mode === "server"
-                ? "سرور اختصاصی"
-                : mode === "static"
-                  ? "نسخه استاتیک"
-                  : "در حال اتصال…"}
-            </span>
           </div>
         </div>
 
@@ -146,14 +136,6 @@ export default function App() {
           </div>
         ) : null}
 
-        {mode === "static" ? (
-          <div className="alert alert--info" role="note">
-            این نسخه روی GitHub Pages اجرا می‌شود و داده‌ها را مستقیم از منابع عمومی با CORS
-            دریافت می‌کند. به‌دلیل نبود زمان دقیق مظنه در برخی سرویس‌ها، مقادیر داخلی با وضعیت
-            «تأخیری» نمایش داده می‌شوند و به‌عنوان زنده برچسب‌گذاری نمی‌شوند.
-          </div>
-        ) : null}
-
         <section className="hero" aria-label="خلاصه بازار">
           <div className="hero__main">
             {featured ? (
@@ -196,6 +178,8 @@ export default function App() {
           </div>
         </section>
 
+        <Calculator calculations={calculations} items={items} />
+
         <BoardSection
           title={CATEGORY_TITLE.gold}
           hint="قیمت هر گرم به تومان"
@@ -218,7 +202,7 @@ export default function App() {
           <div className="panel__head">
             <div>
               <h2 className="panel__title">{CATEGORY_TITLE.currency}</h2>
-              <p className="panel__sub">قیمت‌ها به تومان، از منبع داخلی</p>
+              <p className="panel__sub">قیمت‌ها به تومان</p>
             </div>
             <span className="panel__stamp">
               آخرین به‌روزرسانی: {data ? fmtDateTime(data.generatedAt) : "—"}
@@ -258,7 +242,7 @@ export default function App() {
         <section className="panel calc-panel">
           <div className="panel__head">
             <div>
-              <h2 className="panel__title">مرجع محاسباتی زرنما</h2>
+              <h2 className="panel__title">مرجع محاسباتی مثقال‌یار</h2>
               <p className="panel__sub">
                 مقادیر نظری از انس جهانی، دلار و عیار محاسبه می‌شوند؛ مظنه بازار نیستند
               </p>
@@ -299,7 +283,7 @@ export default function App() {
                       <td>{coin.title}</td>
                       <td>{faNum(coin.marketToman)}</td>
                       <td>{faNum(coin.intrinsicToman)}</td>
-                      <td className={trendClass(coin.bubblePct)}>{fmtPct(coin.bubblePct)}</td>
+                      <td className={bubbleClass(coin.bubblePct)}>{fmtPct(coin.bubblePct)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -318,15 +302,13 @@ export default function App() {
       <footer className="footer">
         <div className="wrap footer__inner">
           <p>
-            زرنما فقط تابلوی قیمت است و معامله یا مشاوره مالی ارائه نمی‌کند. داده‌ها از منابع
-            عمومی بازار خوانده می‌شوند و ممکن است با تأخیر یا قطعی منبع منتشر شوند.
+            مثقال‌یار فقط تابلو و ابزار محاسبهٔ قیمت است و معامله یا مشاورهٔ مالی ارائه نمی‌کند.
+            مظنه‌ها از بازار خوانده می‌شوند و ممکن است با تأخیر منتشر شوند.
           </p>
           <p className="footer__meta">
             <a href="https://github.com/S3epi/gold-site" target="_blank" rel="noreferrer">
               مخزن پروژه در GitHub
             </a>
-            <span>·</span>
-            <span>وضعیت شبکه: {networkLabel(data?.network.overall)}</span>
           </p>
         </div>
       </footer>
@@ -335,13 +317,6 @@ export default function App() {
 }
 
 const PLACEHOLDER_ROWS = [{ key: "a" }, { key: "b" }, { key: "c" }, { key: "d" }];
-
-function networkLabel(value: string | undefined): string {
-  if (value === "ALL_CONNECTED") return "همه منابع متصل";
-  if (value === "PARTIAL_CONNECTIVITY") return "اتصال جزئی";
-  if (value === "ALL_PROVIDERS_UNAVAILABLE") return "بدون منبع در دسترس";
-  return "در حال بررسی";
-}
 
 function BoardSection({
   title,

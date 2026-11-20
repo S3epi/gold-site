@@ -24,7 +24,7 @@ export class Storage {
 
   constructor(dataDir: string) {
     fs.mkdirSync(dataDir, { recursive: true });
-    this.db = new DatabaseSync(path.join(dataDir, "zernama.db"));
+    this.db = new DatabaseSync(path.join(dataDir, "mesghalyar.db"));
     this.db.exec(`
       PRAGMA journal_mode = WAL;
       PRAGMA synchronous = NORMAL;
