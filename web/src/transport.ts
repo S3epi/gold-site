@@ -21,6 +21,7 @@ import {
   type PlatformSnapshot,
   type PricesPayload
 } from "@mesghalyar/shared";
+import { referenceNow } from "./serverClock";
 
 const BASE = import.meta.env.BASE_URL;
 const TGJU_WIDGET_URL = "https://api.tgju.org/v1/widget/tmp";
@@ -43,7 +44,7 @@ async function fetchPaxgOunce(
   }
   return {
     price,
-    ts: row?.last_updated_at ? row.last_updated_at * 1000 : Date.now(),
+    ts: row?.last_updated_at ? row.last_updated_at * 1000 : referenceNow(),
     source: "gold reference"
   };
 }
@@ -81,7 +82,7 @@ class ServerTransport implements MarketTransport {
 /**
  * Static mode (e.g. GitHub Pages): reads real data directly from providers that
  * allow browser requests. TGJU's widget endpoint does not expose the original
- * market quote time, so domestic values are conservatively marked DELAYED.
+ * market quote time, so domestic values carry the receipt time.
  */
 export class StaticTransport implements MarketTransport {
   mode = "static" as const;
@@ -90,10 +91,15 @@ export class StaticTransport implements MarketTransport {
   private tails = new Map<string, HistoryPoint[]>();
   private historyCache = new Map<string, { at: number; rows: HistoryPoint[] }>();
   private snapshotCache: { at: number; data: PlatformSnapshot | null } = { at: 0, data: null };
-  private quality = { staleAfterMs: 30 * 60_000, liveWithinMs: 180_000, disputePct: 2 };
+  private quality = {
+    staleAfterMs: 30 * 60_000,
+    liveWithinMs: 180_000,
+    disputePct: 2,
+    maxSnapshotAgeMs: 2 * 60 * 60_000
+  };
 
   private async loadSnapshot(): Promise<PlatformSnapshot | null> {
-    if (Date.now() - this.snapshotCache.at < 45_000) return this.snapshotCache.data;
+    if (performance.now() - this.snapshotCache.at < 45_000) return this.snapshotCache.data;
     try {
       const res = await fetch(`${BASE}api/v1/snapshot.json`, {
         headers: { accept: "application/json" },
@@ -105,22 +111,24 @@ export class StaticTransport implements MarketTransport {
       if (!data || typeof data.generatedAt !== "number" || !Array.isArray(data.history)) {
         throw new Error("snapshot payload invalid");
       }
-      this.snapshotCache = { at: Date.now(), data };
+      this.snapshotCache = { at: performance.now(), data };
       return data;
     } catch {
-      this.snapshotCache = { at: Date.now(), data: this.snapshotCache.data };
+      this.snapshotCache = { at: performance.now(), data: this.snapshotCache.data };
       return this.snapshotCache.data;
     }
   }
 
   async prices(): Promise<PricesPayload> {
-    const now = Date.now();
+    const now = referenceNow();
     const domesticKeys = INSTRUMENTS.filter((i) => i.tgjuKey).map((i) => i.tgjuKey as string);
     const extraKeys = ["tether_gold_xaut", "ons"];
 
     const [snapshot, widget, goldFirst, paxg] = await Promise.all([
       this.loadSnapshot(),
-      fetchTgjuWidget(TGJU_WIDGET_URL, [...domesticKeys, ...extraKeys], 15_000).catch(() => null),
+      fetchTgjuWidget(TGJU_WIDGET_URL, [...domesticKeys, ...extraKeys], 15_000, {
+        bustCache: true
+      }).catch(() => null),
       fetchGoldOunce(GOLDAPI_URL, 15_000, now).catch(() => null),
       fetchPaxgOunce(PAXG_URL, 15_000).catch(() => null)
     ]);
@@ -186,9 +194,9 @@ export class StaticTransport implements MarketTransport {
     }
 
     const melted = snapshot?.item;
-    if (melted && Number.isFinite(melted.priceRial) && melted.priceRial > 0) {
+    const meltedAge = melted ? referenceNow() - snapshot.generatedAt : Infinity;
+    if (melted && Number.isFinite(melted.priceRial) && melted.priceRial > 0 && meltedAge <= this.quality.maxSnapshotAgeMs) {
       const ts = snapshot.generatedAt;
-      const age = now - ts;
       this.entries.set("melted18", {
         price: melted.priceRial,
         ts,
@@ -199,15 +207,18 @@ export class StaticTransport implements MarketTransport {
         high: null,
         low: null
       });
-      this.forced.set("melted18", age > this.quality.staleAfterMs ? "STALE" : "DELAYED");
+      this.forced.set("melted18", meltedAge > this.quality.staleAfterMs ? "STALE" : "DELAYED");
       if (melted.disputed) this.forced.set("melted18", "DISPUTED");
-      else if (melted.sourcesCount < 2 && age <= this.quality.staleAfterMs) {
+      else if (melted.sourcesCount < 2 && meltedAge <= this.quality.staleAfterMs) {
         this.forced.set("melted18", "UNVERIFIED");
       }
       this.recordTail("melted18", ts, melted.priceRial);
+    } else {
+      this.entries.delete("melted18");
+      this.forced.delete("melted18");
     }
 
-    if (!domesticOk && !intlOk && !melted) {
+    if (!domesticOk && !intlOk && !this.entries.get("melted18")) {
       throw new Error("منابع داده در دسترس نیستند");
     }
 
@@ -252,10 +263,10 @@ export class StaticTransport implements MarketTransport {
     const inst = INSTRUMENT_BY_ID.get(id);
     if (!inst?.tgjuSlug) return [];
     const cached = this.historyCache.get(id);
-    if (cached && Date.now() - cached.at < 10 * 60_000) return cached.rows;
+    if (cached && performance.now() - cached.at < 10 * 60_000) return cached.rows;
     try {
       const rows = await fetchTgjuHistory(TGJU_HISTORY_URL, inst.tgjuSlug, 25_000, 20_000);
-      this.historyCache.set(id, { at: Date.now(), rows });
+      this.historyCache.set(id, { at: performance.now(), rows });
       return rows;
     } catch {
       return cached?.rows ?? [];
@@ -263,7 +274,7 @@ export class StaticTransport implements MarketTransport {
   }
 
   private async platformHistory(inst: Instrument, period: Period): Promise<HistoryPayload> {
-    const now = Date.now();
+    const now = referenceNow();
     const snapshot = await this.loadSnapshot();
     const rows: HistoryPoint[] = [];
     for (const p of snapshot?.history ?? []) {
@@ -316,7 +327,7 @@ export class StaticTransport implements MarketTransport {
     if (instrumentId === "melted18") return this.platformHistory(inst, period);
     const rows = await this.loadHistory(instrumentId);
     const tail = this.tails.get(instrumentId) ?? [];
-    const now = Date.now();
+    const now = referenceNow();
     const dedup = new Map<number, number>();
     for (const row of [...rows, ...tail]) dedup.set(row.ts, row.price);
     const all = [...dedup.entries()].map(([ts, price]) => ({ ts, price }));

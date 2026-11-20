@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PricesPayload } from "@mesghalyar/shared";
 import { createTransport, type MarketTransport } from "./transport";
+import { referenceIsSynced, syncReferenceTime } from "./serverClock";
 
 const POLL_MS = 20_000;
 const HIDDEN_POLL_MS = 90_000;
@@ -29,6 +30,7 @@ export function useMarket(): MarketState {
       if (cancelled || running) return;
       running = true;
       try {
+        if (!referenceIsSynced()) await syncReferenceTime(true);
         if (!transport.current) {
           transport.current = await createTransport();
           if (!cancelled) setMode(transport.current.mode);

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { CATEGORY_TITLE, type PriceItem } from "@mesghalyar/shared";
 import { useMarket } from "./useMarket";
+import { useClock } from "./useClock";
 import { ChartPanel } from "./components/ChartPanel";
 import { Calculator } from "./components/Calculator";
 import { PriceCard } from "./components/PriceCard";
@@ -19,14 +20,9 @@ const TICKER_IDS = ["gold18", "melted18", "gold24", "emami", "bahar", "usd", "eu
 
 export default function App() {
   const { data, error, mode, transport } = useMarket();
-  const [now, setNow] = useState(() => new Date());
+  const clockNow = useClock();
   const [selectedId, setSelectedId] = useState("gold18");
   const [refreshKey, setRefreshKey] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1_000);
-    return () => clearInterval(timer);
-  }, []);
 
   const items = data?.items ?? [];
   const byId = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
@@ -47,13 +43,12 @@ export default function App() {
 
   const freshness = (item: PriceItem | null | undefined): string => {
     if (!item || !item.ts) return "در دسترس نیست";
-    if (mode === "static" && item.status === "DELAYED") return "مظنه با تأخیر";
-    return fmtAge(item.ts, now.getTime());
+    return fmtAge(item.ts, clockNow ?? item.ts);
   };
 
   const networkWarning =
     data && data.network.overall === "ALL_PROVIDERS_UNAVAILABLE"
-      ? "در حال حاضر دادهٔ زنده‌ای از بازار دریافت نشد؛ در صورت وجود آخرین مقدار معتبر، با وضعیت کهنه نمایش داده می‌شود."
+      ? "در حال حاضر دادهٔ زنده‌ای از بازار دریافت نشد؛ اعداد نمایش‌داده‌شده مربوط به آخرین دریافت موفق هستند."
       : null;
 
   return (
@@ -83,10 +78,10 @@ export default function App() {
           </div>
 
           <div className="header__meta">
-            <div className="clock" title="ساعت به وقت تهران">
+            <div className="clock" title="ساعت رسمی تهران">
               <span className="clock__label">تهران</span>
               <span className="clock__time" aria-live="off">
-                {fmtClock(now)}
+                {clockNow === null ? "—" : fmtClock(new Date(clockNow))}
               </span>
             </div>
           </div>
@@ -139,7 +134,7 @@ export default function App() {
         <section className="hero" aria-label="خلاصه بازار">
           <div className="hero__main">
             {featured ? (
-              <PriceCard item={featured} featured staticMode={mode === "static"} onSelect={openChart} />
+              <PriceCard item={featured} featured onSelect={openChart} />
             ) : (
               <div className="card card--featured card--skeleton" aria-hidden="true">
                 <div className="skel skel--sm" />
@@ -186,7 +181,6 @@ export default function App() {
           items={gold}
           onSelect={openChart}
           loading={!data && !error}
-          staticMode={mode === "static"}
         />
 
         <BoardSection
@@ -195,7 +189,6 @@ export default function App() {
           items={coins}
           onSelect={openChart}
           loading={!data && !error}
-          staticMode={mode === "static"}
         />
 
         <section className="panel currency-panel">
@@ -218,7 +211,6 @@ export default function App() {
                     <span className={`currency-row__pct ${trendClass(item.changePct)}`}>
                       {fmtPct(item.changePct)}
                     </span>
-                    <span className={`dot dot--${item.status.toLowerCase()}`} title={item.status} />
                   </button>
                 </li>
               ) : (
@@ -301,14 +293,10 @@ export default function App() {
 
       <footer className="footer">
         <div className="wrap footer__inner">
-          <p>
-            مثقال‌یار فقط تابلو و ابزار محاسبهٔ قیمت است و معامله یا مشاورهٔ مالی ارائه نمی‌کند.
-            مظنه‌ها از بازار خوانده می‌شوند و ممکن است با تأخیر منتشر شوند.
-          </p>
-          <p className="footer__meta">
-            <a href="https://github.com/S3epi/gold-site" target="_blank" rel="noreferrer">
-              مخزن پروژه در GitHub
-            </a>
+          <p className="footer__disclaimer">
+            <strong>هشدار معامله:</strong> قیمت‌های این سایت صرفاً برای اطلاع و محاسبه است و نباید مبنای
+            هیچ معامله‌ای قرار گیرد. مثقال‌یار تابلو و ابزار محاسبه است، نه کارگزاری یا مشاور مالی، و
+            هیچ مسئولیتی در قبال تصمیم‌ها، معاملات یا زیان‌های ناشی از استفاده از این اطلاعات نمی‌پذیرد.
           </p>
         </div>
       </footer>
@@ -323,15 +311,13 @@ function BoardSection({
   hint,
   items,
   onSelect,
-  loading,
-  staticMode
+  loading
 }: {
   title: string;
   hint: string;
   items: PriceItem[];
   onSelect: (id: string) => void;
   loading: boolean;
-  staticMode: boolean;
 }) {
   if (loading) {
     return (
@@ -360,12 +346,7 @@ function BoardSection({
       </div>
       <div className="board__grid">
         {items.map((item) => (
-          <PriceCard
-            key={item.id}
-            item={item}
-            onSelect={onSelect}
-            staticMode={staticMode}
-          />
+          <PriceCard key={item.id} item={item} onSelect={onSelect} />
         ))}
       </div>
     </section>

@@ -9,6 +9,7 @@ import { z } from "zod";
 import { isPeriod, INSTRUMENT_BY_ID } from "@mesghalyar/shared";
 import { config } from "./config.js";
 import type { Engine } from "./engine.js";
+import { referenceTime } from "./time.js";
 
 const historyQuery = z.object({
   instrument: z.string().min(1).max(40),
@@ -70,6 +71,7 @@ export async function registerApi(app: FastifyInstance, engine: Engine): Promise
   }));
 
   app.get("/api/v1/prices", pricesHandler());
+  app.get("/api/v1/time", async () => referenceTime());
   app.get("/api/v1/gold", pricesHandler("gold"));
   app.get("/api/v1/coins", pricesHandler("coin"));
   app.get("/api/v1/currencies", pricesHandler("currency"));

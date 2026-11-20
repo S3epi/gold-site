@@ -7,4 +7,5 @@ data/
 coverage/
 .vite/
 web/public/api/v1/snapshot.json
+web/public/api/v1/app-time.json
 .tmp/

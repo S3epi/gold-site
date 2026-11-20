@@ -13,15 +13,15 @@ import {
 interface Props {
   item: PriceItem;
   featured?: boolean;
-  staticMode?: boolean;
   onSelect?: (id: string) => void;
 }
 
-export function PriceCard({ item, featured = false, staticMode = false, onSelect }: Props) {
+export function PriceCard({ item, featured = false, onSelect }: Props) {
   const trend = trendClass(item.changePct);
   const bubble = item.calc?.kind === "theoretical-bubble" ? item.calc : null;
   const reference = item.calc?.kind === "platform-reference" ? item.calc : null;
   const interactive = Boolean(onSelect);
+  const showBadge = item.status === "LIVE" || item.status === "UNAVAILABLE";
 
   return (
     <article
@@ -50,12 +50,14 @@ export function PriceCard({ item, featured = false, staticMode = false, onSelect
     >
       <header className="card__head">
         <h3 className="card__title">{item.title}</h3>
-        <span
-          className={`badge badge--${item.status.toLowerCase()}`}
-          title={STATUS_HINT[item.status]}
-        >
-          {STATUS_LABEL[item.status]}
-        </span>
+        {showBadge ? (
+          <span
+            className={`badge badge--${item.status.toLowerCase()}`}
+            title={STATUS_HINT[item.status]}
+          >
+            {STATUS_LABEL[item.status]}
+          </span>
+        ) : null}
       </header>
 
       <div className="card__price">
@@ -95,9 +97,7 @@ export function PriceCard({ item, featured = false, staticMode = false, onSelect
       ) : null}
 
       <footer className="card__foot">
-        <time>
-          {staticMode && item.status === "DELAYED" ? "مظنه با تأخیر" : fmtTime(item.ts)}
-        </time>
+        <time>{fmtTime(item.ts)}</time>
       </footer>
     </article>
   );

@@ -17,9 +17,11 @@ export interface WidgetEntry {
 export async function fetchTgjuWidget(
   baseUrl: string,
   keys: string[],
-  timeoutMs: number
+  timeoutMs: number,
+  opts: { bustCache?: boolean } = {}
 ): Promise<Map<string, WidgetEntry>> {
-  const url = `${baseUrl}?keys=${encodeURIComponent(keys.join(","))}&lang=1&hl=0&index=0`;
+  const suffix = opts.bustCache ? `&_=${Date.now()}` : "";
+  const url = `${baseUrl}?keys=${encodeURIComponent(keys.join(","))}&lang=1&hl=0&index=0${suffix}`;
   const raw = (await fetchJson(url, timeoutMs)) as {
     response?: { indicators?: { name?: string; p?: unknown; d?: unknown; dp?: unknown; h?: unknown; l?: unknown }[] };
   };

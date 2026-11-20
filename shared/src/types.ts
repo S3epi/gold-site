@@ -1,4 +1,5 @@
 import type { Category } from "./instruments.js";
+import type { TehranClock } from "./time.js";
 
 export interface Quote {
   instrumentId: string;
@@ -146,6 +147,21 @@ export interface UsdCross {
   priceToman: number;
   ts: number;
   source: string;
+}
+
+/**
+ * Reference clock for the site. `offsetMs` is added to the responding host's
+ * `Date` header to obtain the authoritative Tehran time, so the browser never
+ * relies on the visitor's device clock.
+ */
+export interface AppTimePayload {
+  ok: boolean;
+  source: "time.ir" | "host";
+  offsetMs: number;
+  epochMs: number | null;
+  sampledAt: number;
+  tehran: TehranClock;
+  generatedAt: number;
 }
 
 /** Static snapshot published with the site so Pages can read platform trade prices without CORS. */

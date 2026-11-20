@@ -587,18 +587,6 @@ a:hover {
   border-color: rgba(148, 163, 184, 0.3);
 }
 
-.badge--disputed {
-  color: #fca5a5;
-  background: rgba(248, 113, 113, 0.1);
-  border-color: rgba(248, 113, 113, 0.4);
-}
-
-.badge--unverified {
-  color: #93c5fd;
-  background: rgba(96, 165, 250, 0.1);
-  border-color: rgba(96, 165, 250, 0.38);
-}
-
 /* ============ Boards ============ */
 
 .board {
@@ -737,30 +725,6 @@ a:hover {
   font-variant-numeric: tabular-nums;
   min-width: 52px;
   text-align: end;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--muted);
-}
-
-.dot--live {
-  background: var(--up);
-  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
-}
-.dot--delayed {
-  background: #fbbf24;
-}
-.dot--stale {
-  background: #fb923c;
-}
-.dot--disputed {
-  background: var(--down);
-}
-.dot--unavailable {
-  background: #64748b;
 }
 
 .currency-row--ghost {
@@ -1233,11 +1197,15 @@ a:hover {
   line-height: 1.9;
 }
 
-.footer__meta {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
+.footer__disclaimer {
+  max-width: 900px;
+  margin: 0;
+  padding-inline-start: 12px;
+  border-inline-start: 2px solid rgba(233, 196, 106, 0.55);
+}
+
+.footer__disclaimer strong {
+  color: var(--gold-2);
 }
 
 /* ============ Responsive ============ */
