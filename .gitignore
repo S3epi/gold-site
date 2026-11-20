@@ -6,3 +6,5 @@ data/
 .DS_Store
 coverage/
 .vite/
+web/public/api/v1/snapshot.json
+.tmp/

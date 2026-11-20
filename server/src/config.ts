@@ -41,6 +41,12 @@ export interface AppConfig {
     intervalMs: number;
     timeoutMs: number;
   };
+  platforms: {
+    enabled: boolean;
+    urls: { talasea: string; milli: string; taline: string };
+    intervalMs: number;
+    timeoutMs: number;
+  };
   quality: {
     staleAfterMs: number;
     liveWithinMs: number;
@@ -86,6 +92,17 @@ export const config: AppConfig = {
       "https://api.nobitex.ir/market/stats?srcCurrency=usdt&dstCurrency=rls",
     intervalMs: num(process.env.NOBITEX_INTERVAL_MS, 120_000),
     timeoutMs: num(process.env.NOBITEX_TIMEOUT_MS, 12_000)
+  },
+  platforms: {
+    enabled: bool(process.env.PLATFORMS_ENABLED, true),
+    urls: {
+      talasea:
+        process.env.TALASEA_URL || "https://api.talasea.ir/api/market/getGoldPrice",
+      milli: process.env.MILLI_URL || "https://milli.gold/",
+      taline: process.env.TALINE_URL || "https://taline.ir/"
+    },
+    intervalMs: num(process.env.PLATFORMS_INTERVAL_MS, 60_000),
+    timeoutMs: num(process.env.PLATFORMS_TIMEOUT_MS, 20_000)
   },
   quality: {
     staleAfterMs: num(process.env.STALE_AFTER_MS, 900_000),

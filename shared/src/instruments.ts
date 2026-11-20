@@ -23,8 +23,8 @@ export const MITHQAL_PURITY = 0.705;
 export const INSTRUMENTS: Instrument[] = [
   {
     id: "gold18",
-    title: "طلای ۱۸ عیار (گرمی)",
-    short: "۱۸ عیار",
+    title: "طلای ۱۸ عیار بازار (گرمی)",
+    short: "۱۸ عیار بازار",
     category: "gold",
     unit: "IRR",
     tgjuKey: "geram18",
@@ -55,25 +55,37 @@ export const INSTRUMENTS: Instrument[] = [
     bounds: { min: 10_000_000, max: 5_000_000_000 }
   },
   {
+    id: "melted18",
+    title: "طلای آب‌شده ۱۸ عیار (آنلاین)",
+    short: "آب‌شده ۱۸",
+    category: "gold",
+    unit: "IRR",
+    reference: { kind: "gold", purity: 0.75 },
+    bounds: { min: 100_000_000, max: 50_000_000_000 },
+    note: "قیمت معاملهٔ پلتفرم‌های آنلاین؛ به ازای هر گرم"
+  },
+  {
     id: "melted",
-    title: "طلای آب‌شده (عمده)",
-    short: "آب‌شده",
+    title: "آب‌شده بنکداری (هر مثقال)",
+    short: "آب‌شده بنکداری",
     category: "gold",
     unit: "IRR",
     tgjuKey: "gold_melted_wholesale",
     tgjuSlug: "gold_melted_wholesale",
-    bounds: { min: 10_000_000, max: 5_000_000_000 }
+    reference: { kind: "mithqal" },
+    bounds: { min: 100_000_000, max: 20_000_000_000 },
+    note: "مظنهٔ عمده؛ هر مثقال ۴٫۶۰۸۳ گرم، نه هر گرم"
   },
   {
     id: "mithqal",
-    title: "مثقال طلا",
+    title: "مثقال طلا (هر مثقال)",
     short: "مثقال",
     category: "gold",
     unit: "IRR",
-    tgjuKey: "gerami",
-    tgjuSlug: "gerami",
+    tgjuKey: "mesghal",
+    tgjuSlug: "mesghal",
     reference: { kind: "mithqal" },
-    bounds: { min: 10_000_000, max: 5_000_000_000 }
+    bounds: { min: 100_000_000, max: 20_000_000_000 }
   },
   {
     id: "emami",
@@ -125,8 +137,10 @@ export const INSTRUMENTS: Instrument[] = [
     short: "یک گرمی",
     category: "coin",
     unit: "IRR",
-    bounds: { min: 1_000_000, max: 1_000_000_000 },
-    note: "منبع قیمت معتبر برای این مورد در دسترس نیست"
+    tgjuKey: "gerami",
+    tgjuSlug: "gerami",
+    spec: { weightG: 1, purity: 0.9 },
+    bounds: { min: 50_000_000, max: 2_000_000_000 }
   },
   {
     id: "usd",

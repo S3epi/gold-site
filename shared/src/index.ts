@@ -7,3 +7,14 @@ export * from "./market.js";
 export { fetchGoldOunce } from "./providers/goldapi.js";
 export { fetchTgjuHistory } from "./providers/tgjuHistory.js";
 export { fetchTgjuWidget, type WidgetEntry } from "./providers/tgjuWidget.js";
+export {
+  MELTED18_BOUNDS,
+  fetchMilliPrice,
+  fetchPlatformQuotes,
+  fetchTalaseaPrice,
+  fetchTalinePrice,
+  platformConsensus,
+  type PlatformConsensus,
+  type PlatformPrice,
+  type PlatformSources
+} from "./providers/platforms.js";

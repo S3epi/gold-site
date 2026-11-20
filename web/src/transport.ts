@@ -13,10 +13,12 @@ import {
   round,
   type HistoryPayload,
   type HistoryPoint,
+  type Instrument,
   type LiveEntry,
   type MarketStatus,
   type Period,
   type PeriodAvailability,
+  type PlatformSnapshot,
   type PricesPayload
 } from "@mesghalyar/shared";
 
@@ -87,14 +89,37 @@ export class StaticTransport implements MarketTransport {
   private forced = new Map<string, MarketStatus>();
   private tails = new Map<string, HistoryPoint[]>();
   private historyCache = new Map<string, { at: number; rows: HistoryPoint[] }>();
+  private snapshotCache: { at: number; data: PlatformSnapshot | null } = { at: 0, data: null };
   private quality = { staleAfterMs: 30 * 60_000, liveWithinMs: 180_000, disputePct: 2 };
+
+  private async loadSnapshot(): Promise<PlatformSnapshot | null> {
+    if (Date.now() - this.snapshotCache.at < 45_000) return this.snapshotCache.data;
+    try {
+      const res = await fetch(`${BASE}api/v1/snapshot.json`, {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(12_000),
+        cache: "no-store"
+      });
+      if (!res.ok) throw new Error(`snapshot ${res.status}`);
+      const data = (await res.json()) as PlatformSnapshot;
+      if (!data || typeof data.generatedAt !== "number" || !Array.isArray(data.history)) {
+        throw new Error("snapshot payload invalid");
+      }
+      this.snapshotCache = { at: Date.now(), data };
+      return data;
+    } catch {
+      this.snapshotCache = { at: Date.now(), data: this.snapshotCache.data };
+      return this.snapshotCache.data;
+    }
+  }
 
   async prices(): Promise<PricesPayload> {
     const now = Date.now();
     const domesticKeys = INSTRUMENTS.filter((i) => i.tgjuKey).map((i) => i.tgjuKey as string);
     const extraKeys = ["tether_gold_xaut", "ons"];
 
-    const [widget, goldFirst, paxg] = await Promise.all([
+    const [snapshot, widget, goldFirst, paxg] = await Promise.all([
+      this.loadSnapshot(),
       fetchTgjuWidget(TGJU_WIDGET_URL, [...domesticKeys, ...extraKeys], 15_000).catch(() => null),
       fetchGoldOunce(GOLDAPI_URL, 15_000, now).catch(() => null),
       fetchPaxgOunce(PAXG_URL, 15_000).catch(() => null)
@@ -160,7 +185,26 @@ export class StaticTransport implements MarketTransport {
       }
     }
 
-    if (!domesticOk && !intlOk) {
+    const melted = snapshot?.item;
+    if (melted && Number.isFinite(melted.priceRial) && melted.priceRial > 0) {
+      const ts = snapshot.generatedAt;
+      const age = now - ts;
+      this.entries.set("melted18", {
+        price: melted.priceRial,
+        ts,
+        receivedAt: now,
+        source: "platform-consensus",
+        change: null,
+        changePct: melted.changePct,
+        high: null,
+        low: null
+      });
+      this.forced.set("melted18", age > this.quality.staleAfterMs ? "STALE" : "DELAYED");
+      if (melted.disputed) this.forced.set("melted18", "DISPUTED");
+      this.recordTail("melted18", ts, melted.priceRial);
+    }
+
+    if (!domesticOk && !intlOk && !melted) {
       throw new Error("منابع داده در دسترس نیستند");
     }
 
@@ -215,9 +259,58 @@ export class StaticTransport implements MarketTransport {
     }
   }
 
+  private async platformHistory(inst: Instrument, period: Period): Promise<HistoryPayload> {
+    const now = Date.now();
+    const snapshot = await this.loadSnapshot();
+    const rows: HistoryPoint[] = [];
+    for (const p of snapshot?.history ?? []) {
+      if (Number.isFinite(p.t) && Number.isFinite(p.p) && p.p > 0) {
+        rows.push({ ts: p.t * 1000, price: p.p * 10 });
+      }
+    }
+    const tail = this.tails.get(inst.id) ?? [];
+    const dedup = new Map<number, number>();
+    for (const row of [...rows, ...tail]) dedup.set(row.ts, row.price);
+    const all = [...dedup.entries()].map(([ts, price]) => ({ ts, price }));
+    const from = periodStart(period, now);
+    const merged = all.filter((r) => r.ts >= from && r.ts <= now);
+    const points = aggregateChartPoints(
+      merged.map((r) => ({ ts: r.ts, price: round(r.price / 10) })),
+      900
+    );
+
+    const periods = {} as Record<Period, PeriodAvailability>;
+    for (const p of PERIODS) {
+      const start = periodStart(p, now);
+      const count = all.filter((r) => r.ts >= start && r.ts <= now).length;
+      periods[p] = { available: count >= 2, count };
+    }
+
+    const lastPoint = merged.length ? merged[merged.length - 1] : null;
+    return {
+      instrument: {
+        id: inst.id,
+        title: inst.title,
+        short: inst.short,
+        unit: "TOMAN",
+        category: inst.category
+      },
+      period,
+      points,
+      meta: {
+        source: rows.length ? "platform-observations" : null,
+        lastTs: lastPoint?.ts ?? null,
+        granularity: "auto"
+      },
+      range: { from, to: now },
+      periods
+    };
+  }
+
   async history(instrumentId: string, period: Period): Promise<HistoryPayload> {
     const inst = INSTRUMENT_BY_ID.get(instrumentId);
     if (!inst) throw new Error("unknown instrument");
+    if (instrumentId === "melted18") return this.platformHistory(inst, period);
     const rows = await this.loadHistory(instrumentId);
     const tail = this.tails.get(instrumentId) ?? [];
     const now = Date.now();

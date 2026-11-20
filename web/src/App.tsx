@@ -15,7 +15,7 @@ import {
   trendClass
 } from "./format";
 
-const TICKER_IDS = ["gold18", "gold24", "emami", "bahar", "usd", "eur", "xau"];
+const TICKER_IDS = ["gold18", "melted18", "gold24", "emami", "bahar", "usd", "eur", "xau"];
 
 export default function App() {
   const { data, error, mode, transport } = useMarket();
@@ -34,7 +34,7 @@ export default function App() {
   const coins = items.filter((item) => item.category === "coin");
   const currencies = items.filter((item) => item.category === "currency");
   const calculations = data?.calculations ?? null;
-  const featured = byId.get("gold18") ?? null;
+  const featured = byId.get("melted18") ?? byId.get("gold18") ?? null;
   const selected = byId.get(selectedId) ?? null;
   const ticker = TICKER_IDS.map((id) => byId.get(id)).filter(
     (item): item is NonNullable<typeof item> => Boolean(item && item.price !== null)
@@ -182,7 +182,7 @@ export default function App() {
 
         <BoardSection
           title={CATEGORY_TITLE.gold}
-          hint="قیمت هر گرم به تومان"
+          hint="قیمت‌ها به تومان؛ آبشدهٔ بنکداری و مثقال به ازای هر مثقال"
           items={gold}
           onSelect={openChart}
           loading={!data && !error}

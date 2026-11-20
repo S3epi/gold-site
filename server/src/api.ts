@@ -76,7 +76,8 @@ export async function registerApi(app: FastifyInstance, engine: Engine): Promise
   app.get("/api/v1/ounce", pricesHandler("ounce"));
   app.get("/api/v1/calculations", async () => engine.prices().calculations);
   app.get("/api/v1/status", async () => engine.status());
-  app.get("/api/v1/providers", async () => ({ providers: engine.providersView() }));
+  app.get("/api/v1/providers", async () => ({ providers: engine.providersView(), platforms: engine.platformsView() }));
+  app.get("/api/v1/platforms", async () => engine.platformsView());
 
   app.get(
     "/api/v1/history",

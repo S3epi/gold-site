@@ -147,3 +147,20 @@ export interface UsdCross {
   ts: number;
   source: string;
 }
+
+/** Static snapshot published with the site so Pages can read platform trade prices without CORS. */
+export interface PlatformSnapshot {
+  ok: boolean;
+  generatedAt: number;
+  item: {
+    id: "melted18";
+    priceRial: number;
+    changePct: number | null;
+    disputed: boolean;
+    spreadPct: number | null;
+    sourcesCount: number;
+  } | null;
+  /** Real observations recorded by the snapshot job: epoch seconds, Toman per gram. */
+  history: { t: number; p: number }[];
+  note?: string;
+}

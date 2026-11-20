@@ -23,6 +23,7 @@ import {
 import { config } from "./config.js";
 import { Storage } from "./db.js";
 import { NobitexProvider } from "./providers/nobitex.js";
+import { PlatformsProvider } from "./providers/platforms.js";
 import { TgjuProvider } from "./providers/tgju.js";
 import { errorMessage } from "./util.js";
 
@@ -49,10 +50,20 @@ export type SettingsKey =
 
 export type SettingsPatch = Partial<Record<SettingsKey, number>>;
 
+export interface PlatformConsensusView {
+  priceRial: number;
+  changePct: number | null;
+  spreadPct: number | null;
+  disputed: boolean;
+  sourcesCount: number;
+  ts: number;
+}
+
 const PROVIDER_NAMES = {
   domestic: "tgju",
   international: "gold-api",
-  nobitex: "nobitex"
+  nobitex: "nobitex",
+  platforms: "platforms"
 } as const;
 
 const SETTING_LIMITS: Record<SettingsKey, { min: number; max: number }> = {
@@ -74,14 +85,17 @@ export class Engine {
   private health: Record<keyof typeof PROVIDER_NAMES, ProviderState> = {
     domestic: freshState(),
     international: freshState(),
-    nobitex: freshState()
+    nobitex: freshState(),
+    platforms: freshState()
   };
+  private platformConsensus: PlatformConsensusView | null = null;
   private timers = new Set<ReturnType<typeof setTimeout>>();
   private stopping = false;
   private domesticBusy = false;
   private seeding = false;
   private tgju = new TgjuProvider();
   private nobitex = new NobitexProvider();
+  private platforms = new PlatformsProvider();
 
   constructor(
     private storage: Storage,
@@ -139,6 +153,14 @@ export class Engine {
     }
     if (config.nobitex.enabled) {
       this.scheduleLoop("nobitex", () => this.tickNobitex(), () => config.nobitex.intervalMs, 4_000);
+    }
+    if (config.platforms.enabled) {
+      this.scheduleLoop(
+        "platforms",
+        () => this.tickPlatforms(),
+        () => config.platforms.intervalMs,
+        2_500
+      );
     }
     if (config.history.seedEnabled) {
       this.scheduleLoop(
@@ -209,6 +231,27 @@ export class Engine {
       this.markOk("international", now);
     } catch (err) {
       this.markFail("international", now, err);
+    }
+  }
+
+  private async tickPlatforms(): Promise<void> {
+    const now = this.now();
+    try {
+      const result = await this.platforms.fetchMelted18(now);
+      if (!result) throw new Error("no platform source responded");
+      this.acceptQuote(result.quote, now);
+      const { consensus } = result;
+      this.platformConsensus = {
+        priceRial: consensus.priceRial,
+        changePct: consensus.changePct,
+        spreadPct: consensus.spreadPct,
+        disputed: consensus.disputed,
+        sourcesCount: consensus.sources.length,
+        ts: now
+      };
+      this.markOk("platforms", now);
+    } catch (err) {
+      this.markFail("platforms", now, err);
     }
   }
 
@@ -405,7 +448,18 @@ export class Engine {
       const diff = absDiffPct(usd.price / 10, this.usdCross.priceToman);
       if (diff > q.disputePct) disputed.add("usd");
     }
+    if (
+      this.platformConsensus &&
+      now - this.platformConsensus.ts < 15 * 60_000 &&
+      this.platformConsensus.disputed
+    ) {
+      disputed.add("melted18");
+    }
     return disputed;
+  }
+
+  platformsView(): { consensus: PlatformConsensusView | null; enabled: boolean } {
+    return { consensus: this.platformConsensus, enabled: config.platforms.enabled };
   }
 
   networkStatus(): NetworkStatus {
@@ -470,7 +524,8 @@ export class Engine {
     const enabled: Record<string, boolean> = {
       [PROVIDER_NAMES.domestic]: config.domestic.enabled,
       [PROVIDER_NAMES.international]: config.international.enabled,
-      [PROVIDER_NAMES.nobitex]: config.nobitex.enabled
+      [PROVIDER_NAMES.nobitex]: config.nobitex.enabled,
+      [PROVIDER_NAMES.platforms]: config.platforms.enabled
     };
     return (Object.keys(this.health) as (keyof typeof PROVIDER_NAMES)[]).map((key) => {
       const state = this.health[key];
