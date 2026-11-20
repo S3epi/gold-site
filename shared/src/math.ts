@@ -1,4 +1,4 @@
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import { MITHQAL_G, MITHQAL_PURITY, TROY_OUNCE_G } from "./instruments.js";
 
 Decimal.set({ precision: 30, rounding: Decimal.ROUND_HALF_UP });

@@ -1,6 +1,6 @@
+import { parseNumber, type UsdCross } from "@zernama/shared";
 import { config } from "../config.js";
-import { fetchJson, parseNumber } from "../util.js";
-import type { UsdCross } from "./types.js";
+import { fetchJson } from "../util.js";
 
 /** Optional cross-check source for USD/Toman (USDT/IRT on Nobitex, Rial -> Toman). */
 export class NobitexProvider {
