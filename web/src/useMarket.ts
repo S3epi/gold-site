@@ -30,11 +30,15 @@ export function useMarket(): MarketState {
       if (cancelled || running) return;
       running = true;
       try {
-        if (!referenceIsSynced()) await syncReferenceTime(true);
         if (!transport.current) {
           transport.current = await createTransport();
-          if (!cancelled) setMode(transport.current.mode);
+          if (!cancelled) {
+            setMode(transport.current.mode);
+            const cached = transport.current.initial?.();
+            if (cached) setData((current) => current ?? cached);
+          }
         }
+        if (!referenceIsSynced()) await syncReferenceTime(true);
         const payload = await transport.current.prices();
         if (!cancelled) {
           setData(payload);

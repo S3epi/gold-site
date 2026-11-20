@@ -51,8 +51,30 @@ async function fetchPaxgOunce(
 
 export interface MarketTransport {
   mode: "server" | "static";
+  /** Last known real observations, for an instant first paint before the network answers. */
+  initial?(): PricesPayload | null;
   prices(): Promise<PricesPayload>;
   history(instrumentId: string, period: Period): Promise<HistoryPayload>;
+}
+
+const STORE_ENTRIES = "mesghalyar.entries.v1";
+const STORE_SNAPSHOT = "mesghalyar.snapshot.v1";
+
+function storeRead<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeWrite(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // storage full or disabled; the site still works without the cache
+  }
 }
 
 class ServerTransport implements MarketTransport {
@@ -101,12 +123,101 @@ export class StaticTransport implements MarketTransport {
     maxSnapshotAgeMs: 2 * 60 * 60_000
   };
 
+  constructor() {
+    this.restore();
+  }
+
+  /**
+   * Seeds the board from the last real observations stored by this browser.
+   * Timestamps are preserved, so statuses are recomputed from actual age.
+   */
+  private restore(): void {
+    const entries = storeRead<[string, LiveEntry][]>(STORE_ENTRIES);
+    if (Array.isArray(entries)) {
+      for (const [id, entry] of entries) {
+        if (
+          !entry ||
+          typeof entry.price !== "number" ||
+          !Number.isFinite(entry.price) ||
+          entry.price <= 0 ||
+          typeof entry.ts !== "number" ||
+          !Number.isFinite(entry.ts) ||
+          referenceNow() - entry.ts > 24 * 60 * 60_000
+        ) {
+          continue;
+        }
+        if (id === "melted18" && referenceNow() - entry.ts > this.quality.maxSnapshotAgeMs) continue;
+        this.entries.set(id, entry);
+        const inst = INSTRUMENT_BY_ID.get(id);
+        if (inst?.tgjuKey) this.forced.set(id, "DELAYED");
+      }
+    }
+    const snapshot = storeRead<PlatformSnapshot>(STORE_SNAPSHOT);
+    if (
+      snapshot &&
+      typeof snapshot.generatedAt === "number" &&
+      Array.isArray(snapshot.history) &&
+      snapshot.item
+    ) {
+      this.snapshotCache = { at: Number.NEGATIVE_INFINITY, data: snapshot };
+    }
+  }
+
+  private persist(): void {
+    storeWrite(STORE_ENTRIES, [...this.entries.entries()]);
+  }
+
+  initial(): PricesPayload | null {
+    if (this.entries.size === 0) return null;
+    const payload = this.buildPayload(referenceNow(), {
+      domestic: false,
+      international: false,
+      cached: true
+    });
+    // The stamp should name the last real observation, not this page load.
+    const lastTs = Math.max(...[...this.entries.values()].map((entry) => entry.ts));
+    return { ...payload, generatedAt: lastTs };
+  }
+
+  private buildPayload(
+    now: number,
+    net: { domestic: boolean; international: boolean; cached?: boolean }
+  ): PricesPayload {
+    const items = buildPriceItems(this.entries, now, this.quality, {
+      forcedStatus: Object.fromEntries(this.forced) as Record<string, MarketStatus>
+    });
+    const overall = net.cached
+      ? "PARTIAL_CONNECTIVITY"
+      : net.domestic && net.international
+        ? "ALL_CONNECTED"
+        : !net.domestic && !net.international
+          ? "ALL_PROVIDERS_UNAVAILABLE"
+          : "PARTIAL_CONNECTIVITY";
+    return {
+      ok: true,
+      generatedAt: now,
+      mode: "static",
+      network: {
+        domestic: net.domestic ? "CONNECTED" : "UNAVAILABLE",
+        international: net.international ? "CONNECTED" : "UNAVAILABLE",
+        overall
+      },
+      items,
+      ounce: items.find((i) => i.id === "xau") ?? null,
+      usd: items.find((i) => i.id === "usd") ?? null,
+      calculations: computeCalculations(items)
+    };
+  }
+
   private async loadSnapshot(): Promise<PlatformSnapshot | null> {
-    if (performance.now() - this.snapshotCache.at < 45_000) return this.snapshotCache.data;
+    if (performance.now() - this.snapshotCache.at < 60_000) return this.snapshotCache.data;
     try {
-      const res = await fetch(`${BASE}api/v1/snapshot.json`, {
+      // Pages serves files with max-age=600; a per-minute URL skips the CDN copy
+      // so a fresh deployment is visible within a minute.
+      const bucket = Math.floor(referenceNow() / 60_000);
+      const res = await fetch(`${BASE}api/v1/snapshot.json?t=${bucket}`, {
         headers: { accept: "application/json" },
-        signal: AbortSignal.timeout(12_000),
+        signal: AbortSignal.timeout(8_000),
         cache: "no-store"
       });
       if (!res.ok) throw new Error(`snapshot ${res.status}`);
@@ -115,6 +226,7 @@ export class StaticTransport implements MarketTransport {
         throw new Error("snapshot payload invalid");
       }
       this.snapshotCache = { at: performance.now(), data };
+      storeWrite(STORE_SNAPSHOT, data);
       return data;
     } catch {
       this.snapshotCache = { at: performance.now(), data: this.snapshotCache.data };
@@ -129,11 +241,11 @@ export class StaticTransport implements MarketTransport {
 
     const [snapshot, widget, goldFirst, paxg] = await Promise.all([
       this.loadSnapshot(),
-      fetchTgjuWidget(TGJU_WIDGET_URL, [...domesticKeys, ...extraKeys], 15_000, {
+      fetchTgjuWidget(TGJU_WIDGET_URL, [...domesticKeys, ...extraKeys], 8_000, {
         bustCache: true
       }).catch(() => null),
-      fetchGoldOunce(GOLDAPI_URL, 15_000, now).catch(() => null),
-      fetchPaxgOunce(PAXG_URL, 15_000).catch(() => null)
+      fetchGoldOunce(GOLDAPI_URL, 8_000, now).catch(() => null),
+      fetchPaxgOunce(PAXG_URL, 8_000).catch(() => null)
     ]);
 
     const intl = goldFirst ?? paxg;
@@ -225,31 +337,8 @@ export class StaticTransport implements MarketTransport {
       throw new Error("منابع داده در دسترس نیستند");
     }
 
-    const items = buildPriceItems(this.entries, now, this.quality, {
-      forcedStatus: Object.fromEntries(this.forced) as Record<string, MarketStatus>
-    });
-
-    const overall =
-      domesticOk && intlOk
-        ? "ALL_CONNECTED"
-        : !domesticOk && !intlOk
-          ? "ALL_PROVIDERS_UNAVAILABLE"
-          : "PARTIAL_CONNECTIVITY";
-
-    return {
-      ok: true,
-      generatedAt: now,
-      mode: "static",
-      network: {
-        domestic: domesticOk ? "CONNECTED" : "UNAVAILABLE",
-        international: intlOk ? "CONNECTED" : "UNAVAILABLE",
-        overall
-      },
-      items,
-      ounce: items.find((i) => i.id === "xau") ?? null,
-      usd: items.find((i) => i.id === "usd") ?? null,
-      calculations: computeCalculations(items)
-    };
+    this.persist();
+    return this.buildPayload(now, { domestic: domesticOk, international: intlOk });
   }
 
   private recordTail(id: string, ts: number, price: number): void {

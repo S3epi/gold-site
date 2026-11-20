@@ -24,12 +24,15 @@ export function referenceIsSynced(): boolean {
 }
 
 async function loadPayload(): Promise<{ dateHeader: string | null; payload: AppTimePayload } | null> {
-  for (const path of ["api/v1/time", "api/v1/app-time.json"]) {
+  // The static file is served with max-age=600, so a per-minute URL keeps the
+  // published clock offset current right after a deployment.
+  const bucket = Math.floor(Date.now() / 60_000);
+  for (const path of ["api/v1/time", `api/v1/app-time.json?t=${bucket}`]) {
     try {
       const res = await fetch(`${BASE}${path}`, {
         cache: "no-store",
         headers: { accept: "application/json" },
-        signal: AbortSignal.timeout(10_000)
+        signal: AbortSignal.timeout(5_000)
       });
       if (!res.ok) continue;
       const payload = (await res.json()) as AppTimePayload | null;

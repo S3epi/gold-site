@@ -15,6 +15,7 @@ import {
   fmtPrice,
   trendClass
 } from "./format";
+import { referenceNow } from "./serverClock";
 
 const TICKER_IDS = ["gold18", "melted18", "gold24", "emami", "bahar", "usd", "eur", "xau"];
 
@@ -43,7 +44,7 @@ export default function App() {
 
   const freshness = (item: PriceItem | null | undefined): string => {
     if (!item || !item.ts) return "در دسترس نیست";
-    return fmtAge(item.ts, clockNow ?? item.ts);
+    return fmtAge(item.ts, clockNow ?? referenceNow());
   };
 
   const networkWarning =
