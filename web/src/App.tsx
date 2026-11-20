@@ -113,9 +113,14 @@ export default function App() {
                       tabIndex={copy === 1 ? -1 : 0}
                     >
                       <span className="ticker__name">{item.short}</span>
-                      <span className="ticker__price">{fmtPrice(item.price, item.unit)}</span>
-                      <span className={`ticker__pct ${trendClass(item.changePct)}`}>
-                        {fmtPct(item.changePct)}
+                      <span className="ticker__price">
+                        <bdi>{fmtPrice(item.price, item.unit)}</bdi>
+                      </span>
+                      <span
+                        className={`ticker__pct ${trendClass(item.changePct)}`}
+                        title="تغییر در ۲۴ ساعت گذشته"
+                      >
+                        <bdi>{fmtPct(item.changePct)}</bdi>
                       </span>
                     </button>
                   ))}
@@ -219,9 +224,14 @@ export default function App() {
                 <li key={item.id}>
                   <button type="button" className="currency-row" onClick={() => openChart(item.id)}>
                     <span className="currency-row__name">{item.title}</span>
-                    <span className="currency-row__price">{fmtPrice(item.price, item.unit)}</span>
-                    <span className={`currency-row__pct ${trendClass(item.changePct)}`}>
-                      {fmtPct(item.changePct)}
+                    <span className="currency-row__price">
+                      <bdi>{fmtPrice(item.price, item.unit)}</bdi>
+                    </span>
+                    <span
+                      className={`currency-row__pct ${trendClass(item.changePct)}`}
+                      title="تغییر در ۲۴ ساعت گذشته"
+                    >
+                      <bdi>{fmtPct(item.changePct)}</bdi>
                     </span>
                   </button>
                 </li>

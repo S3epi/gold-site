@@ -3,6 +3,7 @@ import {
   STATUS_HINT,
   STATUS_LABEL,
   bubbleClass,
+  bubbleWord,
   faNum,
   fmtChange,
   fmtPct,
@@ -74,10 +75,12 @@ export function PriceCard({ item, featured = false, onSelect }: Props) {
           title="تغییر قیمت در ۲۴ ساعت گذشته بر پایه قیمت‌های پایانی ثبت‌شده"
         >
           <span className="card__pct">
-            {fmtPct(item.changePct)}
-            <small className="card__pct-period">۲۴س</small>
+            <bdi>{fmtPct(item.changePct)}</bdi>
+            <small className="card__pct-period">۲۴ ساعته</small>
           </span>
-          <span className="card__delta">{fmtChange(item.change, item.unit)}</span>
+          <span className="card__delta">
+            <bdi>{fmtChange(item.change, item.unit)}</bdi>
+          </span>
         </div>
       )}
 
@@ -86,12 +89,17 @@ export function PriceCard({ item, featured = false, onSelect }: Props) {
           className="card__calc"
           title={`ارزش ذاتی: ${faNum(bubble.intrinsicToman ?? 0)} تومان — حباب = مظنه − ارزش ذاتی`}
         >
-          <span>حباب</span>
+          <span>{bubbleWord(bubble.bubblePct ?? null)}</span>
           <span className="card__calc-val">
             <b className={bubbleClass(bubble.bubblePct ?? null)}>
-              {fmtPct(bubble.bubblePct ?? null)}
+              <bdi>{fmtPct(bubble.bubblePct ?? null)}</bdi>
             </b>
-            <span className="muted">{fmtChange(bubble.bubbleToman ?? null, "TOMAN")} ت</span>
+            <span className="muted">
+              <bdi>
+                {fmtChange(bubble.bubbleToman ?? null, "TOMAN")}
+                {" ت"}
+              </bdi>
+            </span>
           </span>
         </div>
       ) : reference ? (
@@ -99,12 +107,17 @@ export function PriceCard({ item, featured = false, onSelect }: Props) {
           className="card__calc"
           title={`قیمت مرجع (انس × دلار × عیار): ${faNum(reference.referenceToman ?? 0)} تومان — حباب = بازار − مرجع`}
         >
-          <span>حباب</span>
+          <span>{bubbleWord(reference.premiumPct ?? null)}</span>
           <span className="card__calc-val">
             <b className={bubbleClass(reference.premiumPct ?? null)}>
-              {fmtPct(reference.premiumPct ?? null)}
+              <bdi>{fmtPct(reference.premiumPct ?? null)}</bdi>
             </b>
-            <span className="muted">{fmtChange(reference.premiumToman ?? null, "TOMAN")} ت</span>
+            <span className="muted">
+              <bdi>
+                {fmtChange(reference.premiumToman ?? null, "TOMAN")}
+                {" ت"}
+              </bdi>
+            </span>
           </span>
         </div>
       ) : null}

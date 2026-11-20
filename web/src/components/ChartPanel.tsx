@@ -332,9 +332,9 @@ export function ChartPanel({
           <dd>{fmtPrice(liveItem?.price ?? last, unit)}</dd>
         </div>
         <div>
-          <dt>تغییر</dt>
+          <dt>تغییر ۲۴ ساعته</dt>
           <dd className={liveItem?.changePct ? (liveItem.changePct > 0 ? "up" : "down") : ""}>
-            {fmtPct(liveItem?.changePct ?? null)}
+            <bdi>{fmtPct(liveItem?.changePct ?? null)}</bdi>
           </dd>
         </div>
         <div>

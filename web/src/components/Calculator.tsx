@@ -6,7 +6,7 @@ import {
   type CalculationsPayload,
   type PriceItem
 } from "@mesghalyar/shared";
-import { bubbleClass, fmtChange, fmtPct, fmtPrice } from "../format";
+import { bubbleClass, bubbleWord, fmtChange, fmtPct, fmtPrice } from "../format";
 
 const GOLD_OPTIONS = [
   { id: "gold18", label: "طلای ۱۸ عیار", purity: 0.75 },
@@ -149,11 +149,13 @@ export function Calculator({
             <i>تومان</i>
           </div>
           <div>
-            <span>حباب</span>
+            <span>{bubbleWord(result.bubblePct)}</span>
             <strong className={bubbleClass(result.bubblePct)}>
-              {fmtChange(result.bubble, "TOMAN")}
+              <bdi>{fmtChange(result.bubble, "TOMAN")}</bdi>
             </strong>
-            <i>تومان · {fmtPct(result.bubblePct)}</i>
+            <i>
+              تومان · <bdi>{fmtPct(result.bubblePct)}</bdi>
+            </i>
           </div>
         </div>
       ) : (

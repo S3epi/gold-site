@@ -20,8 +20,12 @@ export function fmtPrice(value: number | null, unit: "TOMAN" | "USD"): string {
 }
 
 export function fmtChange(value: number | null, unit: "TOMAN" | "USD"): string {
-  if (value === null || !Number.isFinite(value) || value === 0) return "—";
-  const abs = unit === "TOMAN" ? faInt.format(Math.abs(Math.round(value))) : faTwo.format(Math.abs(value));
+  if (value === null || !Number.isFinite(value)) return "—";
+  const abs =
+    unit === "TOMAN"
+      ? faInt.format(Math.abs(Math.round(value)))
+      : faTwo.format(Math.abs(value));
+  if (value === 0) return abs;
   return `${value > 0 ? "+" : "−"}${abs}`;
 }
 
@@ -96,8 +100,13 @@ export function trendClass(changePct: number | null): "up" | "down" | "flat" {
   return changePct > 0 ? "up" : "down";
 }
 
-/** In the gold market a positive bubble means price above intrinsic value. */
+/** Bubble color follows the printed sign so a positive bubble never looks negative. */
 export function bubbleClass(bubblePct: number | null): "up" | "down" | "flat" {
   if (bubblePct === null || !Number.isFinite(bubblePct) || bubblePct === 0) return "flat";
-  return bubblePct > 0 ? "down" : "up";
+  return bubblePct > 0 ? "up" : "down";
+}
+
+export function bubbleWord(bubblePct: number | null): string {
+  if (bubblePct === null || !Number.isFinite(bubblePct) || bubblePct === 0) return "حباب";
+  return bubblePct > 0 ? "حباب مثبت" : "حباب منفی";
 }

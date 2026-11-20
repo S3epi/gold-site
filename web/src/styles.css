@@ -483,20 +483,29 @@ a:hover {
   font-size: 0.7rem;
 }
 
+bdi {
+  unicode-bidi: isolate;
+}
+
 .card__change {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 4px 10px;
+  min-width: 0;
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
 }
 
 .card__pct {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .card__pct-period {
-  margin-inline-start: 4px;
   font-size: 0.62rem;
   font-weight: 500;
   opacity: 0.65;
@@ -505,13 +514,15 @@ a:hover {
 .card__delta {
   color: var(--muted);
   font-size: 0.72rem;
+  white-space: nowrap;
 }
 
 .card__calc {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 4px 10px;
   padding: 7px 11px;
   font-size: 0.74rem;
   border-radius: 10px;
@@ -522,17 +533,22 @@ a:hover {
 
 .card__calc b {
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .card__calc-val {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 4px 8px;
+  min-width: 0;
   font-variant-numeric: tabular-nums;
 }
 
 .card__calc-val .muted {
   font-size: 0.68rem;
+  white-space: nowrap;
 }
 
 .card__note {
@@ -1327,6 +1343,66 @@ a:hover {
   }
 }
 
+@media (max-width: 560px) {
+  .bubble-table {
+    overflow: visible;
+  }
+
+  .bubble-table thead {
+    display: none;
+  }
+
+  .bubble-table table,
+  .bubble-table tbody,
+  .bubble-table tr,
+  .bubble-table td {
+    display: block;
+  }
+
+  .bubble-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 12px;
+    padding: 10px 2px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .bubble-table td {
+    padding: 0;
+    border: 0;
+    white-space: normal;
+  }
+
+  .bubble-table td:nth-child(1) {
+    grid-column: 1;
+    font-weight: 700;
+  }
+
+  .bubble-table td:nth-child(4) {
+    grid-row: 1;
+    grid-column: 2;
+    font-weight: 700;
+    text-align: end;
+  }
+
+  .bubble-table td:nth-child(2),
+  .bubble-table td:nth-child(3) {
+    font-size: 0.74rem;
+  }
+
+  .bubble-table td:nth-child(2)::before {
+    content: "مظنه ";
+    color: var(--muted);
+    font-size: 0.66rem;
+  }
+
+  .bubble-table td:nth-child(3)::before {
+    content: "ذاتی ";
+    color: var(--muted);
+    font-size: 0.66rem;
+  }
+}
+
 @media (max-width: 380px) {
   .board__grid {
     grid-template-columns: 1fr;
@@ -1334,6 +1410,22 @@ a:hover {
 
   .hero__stats {
     grid-template-columns: 1fr;
+  }
+
+  .card--featured .card__value {
+    font-size: clamp(1.25rem, 6.8vw, 1.55rem);
+  }
+
+  .card__change {
+    font-size: 0.74rem;
+  }
+
+  .card__calc {
+    font-size: 0.68rem;
+  }
+
+  .card__calc-val .muted {
+    font-size: 0.64rem;
   }
 
   .tile {
