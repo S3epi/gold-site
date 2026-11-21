@@ -23,6 +23,7 @@ import {
 import { referenceNow } from "./serverClock";
 import { readChannel } from "./channel";
 import { useFlash } from "./useFlash";
+import { useTickerMarquee } from "./useTickerMarquee";
 import { useWakeLock } from "./useWakeLock";
 import { BRAND } from "./brand";
 
@@ -38,6 +39,10 @@ const TICKER_IDS = [
   "xau"
 ];
 
+// The marquee wraps after one group, so the remaining copies only have to keep
+// wide screens covered (4 × ~1800px).
+const TICKER_COPIES = [0, 1, 2, 3];
+
 export default function App() {
   const { data, error, mode, transport } = useMarket();
   const clockNow = useClock();
@@ -48,6 +53,7 @@ export default function App() {
   const [board, setBoard] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
   const brandTaps = useRef<number[]>([]);
+  const tickerTrackRef = useRef<HTMLDivElement | null>(null);
 
   useWakeLock();
 
@@ -101,8 +107,17 @@ export default function App() {
     (item): item is NonNullable<typeof item> => Boolean(item && item.price !== null)
   );
 
+  useTickerMarquee(tickerTrackRef, ticker.length > 0);
+
+  // scrollIntoView alone leaves the target under the sticky header, so subtract
+  // its real height (which includes the price ticker) before scrolling.
   const scrollToSection = (id: string): void => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const el = document.getElementById(id);
+    if (!el) return;
+    const header = document.querySelector<HTMLElement>(".header");
+    const offset = (header?.offsetHeight ?? 0) + 12;
+    const top = el.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
   };
 
   const openChart = (id: string): void => {
@@ -162,16 +177,16 @@ export default function App() {
 
         {ticker.length > 0 ? (
           <div className="ticker" aria-label="نوار قیمت‌ها">
-            <div className="ticker__track">
-              {[0, 1].map((copy) => (
-                <div className="ticker__group" key={copy} aria-hidden={copy === 1}>
+            <div className="ticker__track" ref={tickerTrackRef}>
+              {TICKER_COPIES.map((copy) => (
+                <div className="ticker__group" key={copy} aria-hidden={copy > 0}>
                   {ticker.map((item) => (
                     <button
                       key={`${copy}-${item.id}`}
                       type="button"
                       className="ticker__item"
                       onClick={() => openChart(item.id)}
-                      tabIndex={copy === 1 ? -1 : 0}
+                      tabIndex={copy > 0 ? -1 : 0}
                     >
                       <span className="ticker__name">{item.short}</span>
                       <FlashNumber className="ticker__price" value={item.price} unit={item.unit} />

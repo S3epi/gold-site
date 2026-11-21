@@ -266,17 +266,12 @@ a:hover {
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
 }
 
+/* Offset is driven frame-by-frame in useTickerMarquee; CSS keyframes broke
+   the loop in RTL on Windows. */
 .ticker__track {
   display: flex;
   width: max-content;
   will-change: transform;
-  animation: ticker-scroll 55s linear infinite;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .ticker:hover .ticker__track {
-    animation-play-state: paused;
-  }
 }
 
 .ticker__group {
@@ -489,15 +484,6 @@ a:hover {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--line-soft);
-}
-
-@keyframes ticker-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(50%);
-  }
 }
 
 /* ============ Alerts ============ */
@@ -2439,8 +2425,12 @@ bdi {
     scroll-behavior: auto;
   }
 
+  .ticker {
+    overflow-x: auto;
+  }
+
   .ticker__track {
-    animation: none;
+    transform: none !important;
   }
 
   .card,

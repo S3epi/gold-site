@@ -5,7 +5,6 @@ import {
   CrosshairMode,
   LineStyle,
   createChart,
-  type IPriceLine,
   type ISeriesApi,
   type IChartApi,
   type UTCTimestamp
@@ -56,7 +55,6 @@ export function ChartPanel({
   const dataKeyRef = useRef<string>("");
   const precisionRef = useRef<0 | 2>(0);
   const lastTimeRef = useRef<number>(-Infinity);
-  const priceLinesRef = useRef<IPriceLine[]>([]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -256,8 +254,14 @@ export function ChartPanel({
     lastTimeRef.current = t;
   }, [liveItem, payload]);
 
+  // Reset both axes and forget the saved selection, otherwise the next history
+  // refresh would restore the very zoom the user just cleared.
   const resetView = (): void => {
-    chartRef.current?.timeScale().fitContent();
+    const chart = chartRef.current;
+    if (!chart) return;
+    dataKeyRef.current = "";
+    chart.priceScale("right").applyOptions({ autoScale: true });
+    chart.timeScale().fitContent();
   };
 
   const points = payload?.points ?? [];
@@ -281,30 +285,6 @@ export function ChartPanel({
       label: `حمایت ${faNum(index + 1)}`
     }));
   }, [payload]);
-
-  useEffect(() => {
-    const series = seriesRef.current;
-    if (!series) return;
-    for (const line of priceLinesRef.current) {
-      try {
-        series.removePriceLine(line);
-      } catch {
-        // chart was already recreated
-      }
-    }
-    priceLinesRef.current = [];
-    if (!supports) return;
-    priceLinesRef.current = supports.map((support, index) =>
-      series.createPriceLine({
-        price: support.level,
-        color: `rgba(233,196,106,${0.5 - index * 0.06})`,
-        lineWidth: 1,
-        lineStyle: LineStyle.Dotted,
-        axisLabelVisible: true,
-        title: support.label
-      })
-    );
-  }, [supports]);
 
   const lastSeen = Math.max(
     payload?.meta.lastTs ?? 0,
