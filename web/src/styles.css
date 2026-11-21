@@ -2518,6 +2518,20 @@ html[data-theme="light"] .card--featured .card__value {
   color: transparent;
 }
 
+html[data-theme="light"] .card__title {
+  color: var(--text);
+}
+
+html[data-theme="light"] .card__calc {
+  color: var(--muted);
+  background: rgba(184, 134, 11, 0.07);
+  border-color: rgba(138, 100, 20, 0.25);
+}
+
+html[data-theme="light"] .calc-basis {
+  color: var(--muted);
+}
+
 html[data-theme="light"] .brand__text strong {
   background: linear-gradient(120deg, #8a6414, #b8860b 55%, #a4781f);
   -webkit-background-clip: text;
