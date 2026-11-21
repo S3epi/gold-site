@@ -49,6 +49,7 @@ export function ChartPanel({
   const [loading, setLoading] = useState(true);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const chipsRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
@@ -168,6 +169,17 @@ export function ChartPanel({
       lastTimeRef.current = -Infinity;
     };
   }, []);
+
+  // Keep the active instrument chip visible when a price click jumps here.
+  useEffect(() => {
+    const wrap = chipsRef.current;
+    const active = wrap?.querySelector<HTMLElement>(".chip--active");
+    if (!wrap || !active) return;
+    const wrapRect = wrap.getBoundingClientRect();
+    const chipRect = active.getBoundingClientRect();
+    const delta = chipRect.left + chipRect.width / 2 - (wrapRect.left + wrapRect.width / 2);
+    if (Math.abs(delta) > 4) wrap.scrollBy({ left: delta, behavior: "smooth" });
+  }, [instrumentId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -308,7 +320,7 @@ export function ChartPanel({
         </button>
       </div>
 
-      <div className="chips" role="tablist" aria-label="انتخاب کالا">
+      <div className="chips" role="tablist" aria-label="انتخاب کالا" ref={chipsRef}>
         {INSTRUMENTS.map((inst) => (
           <button
             key={inst.id}
