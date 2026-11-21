@@ -17,7 +17,10 @@ export function PriceImageModal({ onClose, items }: { onClose: () => void; items
   const [busy, setBusy] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  const urlRef = useRef<string | null>(null);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const cacheRef = useRef(new Map<ImageCategory, Blob>());
+  const urlsRef = useRef(new Map<ImageCategory, string>());
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -27,18 +30,29 @@ export function PriceImageModal({ onClose, items }: { onClose: () => void; items
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // Images are cached per category so switching tabs, or reopening, is instant.
+  // Price polls must not rebuild them, otherwise every 20s is spent redrawing.
   useEffect(() => {
     let cancelled = false;
+    const cached = cacheRef.current.get(category);
+    if (cached) {
+      setBlob(cached);
+      setUrl(urlsRef.current.get(category) ?? null);
+      setFailed(false);
+      setBusy(false);
+      return;
+    }
+
     setBusy(true);
     setMessage(null);
     setFailed(false);
 
-    buildPriceImage(items, category)
+    buildPriceImage(itemsRef.current, category)
       .then((next) => {
         if (cancelled) return;
-        if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+        cacheRef.current.set(category, next);
         const nextUrl = URL.createObjectURL(next);
-        urlRef.current = nextUrl;
+        urlsRef.current.set(category, nextUrl);
         setBlob(next);
         setUrl(nextUrl);
       })
@@ -55,11 +69,43 @@ export function PriceImageModal({ onClose, items }: { onClose: () => void; items
     return () => {
       cancelled = true;
     };
-  }, [items, category]);
+  }, [category]);
+
+  // Warm the other two categories while the user looks at the preview.
+  useEffect(() => {
+    if (busy) return;
+    let cancelled = false;
+    const order = CATEGORIES.filter((cat) => !cacheRef.current.has(cat));
+    if (order.length === 0) return;
+    const idle =
+      typeof window.requestIdleCallback === "function"
+        ? (cb: () => void) => window.requestIdleCallback(cb)
+        : (cb: () => void) => window.setTimeout(cb, 250);
+    const run = (index: number): void => {
+      if (cancelled || index >= order.length) return;
+      const cat = order[index];
+      buildPriceImage(itemsRef.current, cat)
+        .then((next) => {
+          if (cancelled) return;
+          cacheRef.current.set(cat, next);
+          if (!urlsRef.current.has(cat)) {
+            urlsRef.current.set(cat, URL.createObjectURL(next));
+          }
+          run(index + 1);
+        })
+        .catch(() => run(index + 1));
+    };
+    idle(() => run(0));
+    return () => {
+      cancelled = true;
+    };
+  }, [busy, category]);
 
   useEffect(() => {
+    const urls = urlsRef.current;
     return () => {
-      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+      for (const url of urls.values()) URL.revokeObjectURL(url);
+      urls.clear();
     };
   }, []);
 

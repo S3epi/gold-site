@@ -54,6 +54,7 @@ interface TradeFields {
 interface ValueFields {
   weight: string;
   price: string;
+  profitPct: string;
 }
 
 function gold18Price(items: PriceItem[]): number | null {
@@ -86,7 +87,7 @@ export function Calculator({
     taxPct: "",
     sellPrice: ""
   });
-  const [value, setValue] = useState<ValueFields>({ weight: "1", price: "" });
+  const [value, setValue] = useState<ValueFields>({ weight: "1", price: "", profitPct: "" });
   const [karatId, setKaratId] = useState("750");
 
   const setTradeField = (key: keyof TradeFields) => (raw: string) =>
@@ -97,7 +98,10 @@ export function Calculator({
         : groupDigits(raw)
     }));
   const setValueField = (key: keyof ValueFields) => (raw: string) =>
-    setValue((prev) => ({ ...prev, [key]: groupDigits(raw, 3) }));
+    setValue((prev) => ({
+      ...prev,
+      [key]: key === "profitPct" ? groupDigits(raw, 2) : groupDigits(raw, 3)
+    }));
 
   const karat = KARATS.find((k) => k.id === karatId) ?? KARATS[0];
 
@@ -402,13 +406,18 @@ function ValueTab({
     const bubble = intrinsic !== null ? market - intrinsic : null;
     const bubblePct =
       bubble !== null && intrinsic !== null && intrinsic > 0 ? (bubble / intrinsic) * 100 : null;
+    const sellerPct = Math.min(100, parseNum(fields.profitPct));
+    const sellerPerGram = sellerPct > 0 ? perGram * (1 - sellerPct / 100) : null;
     return {
       w,
       perGram,
       market,
       intrinsic: intrinsic !== null ? Math.round(intrinsic) : null,
       bubble: bubble !== null ? Math.round(bubble) : null,
-      bubblePct
+      bubblePct,
+      sellerPct,
+      sellerPerGram,
+      sellerBuy: sellerPerGram !== null ? sellerPerGram * w : null
     };
   }, [fields, marketPerGram, basis, karat]);
 
@@ -435,6 +444,18 @@ function ValueTab({
             value={fields.price}
             placeholder={marketPerGram !== null ? fmtPrice(marketPerGram, "TOMAN") : "قیمت بازار"}
             onChange={(e) => setField("price")(e.target.value)}
+          />
+        </label>
+        <label className="field">
+          <span>
+            سود فروشنده (٪) <i className="field__opt">چند درصد زیر قیمت می‌خرد</i>
+          </span>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={fields.profitPct}
+            placeholder="مثلاً ۵"
+            onChange={(e) => setField("profitPct")(e.target.value)}
           />
         </label>
       </div>
@@ -466,6 +487,16 @@ function ValueTab({
               </i>
             </div>
           ) : null}
+          {result.sellerBuy !== null && result.sellerPerGram !== null ? (
+            <div>
+              <span>خرید فروشنده از شما</span>
+              <strong>{fmtPrice(result.sellerBuy, "TOMAN")}</strong>
+              <i>
+                تومان · <bdi>{fmtPct(-result.sellerPct)}</bdi> زیر بازار · هر گرم{" "}
+                {fmtPrice(result.sellerPerGram, "TOMAN")}
+              </i>
+            </div>
+          ) : null}
         </div>
       ) : (
         <p className="calc-empty">وزن را وارد کنید تا ارزش طلا با عیار انتخاب‌شده حساب شود.</p>
@@ -473,7 +504,8 @@ function ValueTab({
 
       <p className="calc-note">
         ارزش ذاتی = انس جهانی × دلار ÷ ۳۱٫۱۰۳۴۷۶۸ × عیار × وزن؛ ارزش بازار از قیمت واقعی همین
-        عیار در تابلو می‌آید.
+        عیار در تابلو می‌آید. «خرید فروشنده» ارزش بازار منهای درصد سود فروشنده است؛ نرخ واقعی را
+        فروشنده اعلام می‌کند.
       </p>
     </div>
   );

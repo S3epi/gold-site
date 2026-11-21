@@ -13,6 +13,7 @@ import {
   bubbleClass,
   faNum,
   fmtAge,
+  fmtChange,
   fmtClock,
   fmtDate,
   fmtDateTime,
@@ -25,6 +26,7 @@ import { readChannel } from "./channel";
 import { useFlash } from "./useFlash";
 import { useTickerMarquee } from "./useTickerMarquee";
 import { useWakeLock } from "./useWakeLock";
+import { applyTheme, readTheme, type Theme } from "./theme";
 import { BRAND } from "./brand";
 
 const TICKER_IDS = [
@@ -52,10 +54,15 @@ export default function App() {
   const [ownerOpen, setOwnerOpen] = useState(false);
   const [board, setBoard] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => readTheme());
   const brandTaps = useRef<number[]>([]);
   const tickerTrackRef = useRef<HTMLDivElement | null>(null);
 
   useWakeLock();
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     if (location.hash === "#owner") {
@@ -162,6 +169,31 @@ export default function App() {
                 {clockNow === null ? "" : fmtDate(new Date(clockNow))}
               </span>
             </div>
+            <button
+              type="button"
+              className="menu__btn theme-btn"
+              aria-label={theme === "dark" ? "روشن کردن تم" : "تیره کردن تم"}
+              title={theme === "dark" ? "تم روشن" : "تم تیره"}
+              onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            >
+              {theme === "dark" ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4.5" />
+                  <path
+                    d="M12 2v2.2M12 19.8V22M2 12h2.2M19.8 12H22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                  <path
+                    d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a7 7 0 1 0 10.7 10.7Z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </button>
             <SiteMenu
               channel={channel}
               calculations={calculations}
@@ -319,6 +351,7 @@ export default function App() {
         <ChartPanel
           transport={transport}
           mode={mode}
+          theme={theme}
           instrumentId={selectedId}
           onInstrumentChange={setSelectedId}
           liveItem={selected}
@@ -358,9 +391,10 @@ export default function App() {
                 <thead>
                   <tr>
                     <th>سکه</th>
-                    <th>مظنه بازار</th>
-                    <th>ارزش ذاتی</th>
-                    <th>حباب</th>
+                    <th>مظنه بازار (تومان)</th>
+                    <th>ارزش ذاتی (تومان)</th>
+                    <th>حباب (تومان)</th>
+                    <th>حباب (٪)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -369,6 +403,9 @@ export default function App() {
                       <td>{coin.title}</td>
                       <td>{faNum(coin.marketToman)}</td>
                       <td>{faNum(coin.intrinsicToman)}</td>
+                      <td className={bubbleClass(coin.bubblePct)}>
+                        {fmtChange(coin.bubbleToman, "TOMAN")}
+                      </td>
                       <td className={bubbleClass(coin.bubblePct)}>{fmtPct(coin.bubblePct)}</td>
                     </tr>
                   ))}

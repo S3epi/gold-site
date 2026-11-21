@@ -170,10 +170,10 @@ export function trendClass(changePct: number | null): "up" | "down" | "flat" {
   return changePct > 0 ? "up" : "down";
 }
 
-/** Bubble color follows the printed sign so a positive bubble never looks negative. */
+/** A positive bubble means market above intrinsic (expensive): red; negative is green. */
 export function bubbleClass(bubblePct: number | null): "up" | "down" | "flat" {
   if (bubblePct === null || !Number.isFinite(bubblePct) || bubblePct === 0) return "flat";
-  return bubblePct > 0 ? "up" : "down";
+  return bubblePct > 0 ? "down" : "up";
 }
 
 export function bubbleWord(bubblePct: number | null): string {

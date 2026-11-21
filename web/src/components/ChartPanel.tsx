@@ -29,6 +29,7 @@ const SUPPORT_RATIOS = [0.236, 0.382, 0.5, 0.618, 0.786];
 interface Props {
   transport: React.MutableRefObject<MarketTransport | null>;
   mode: "server" | "static" | null;
+  theme: "dark" | "light";
   instrumentId: string;
   onInstrumentChange: (id: string) => void;
   liveItem: PriceItem | null;
@@ -38,6 +39,7 @@ interface Props {
 export function ChartPanel({
   transport,
   mode,
+  theme,
   instrumentId,
   onInstrumentChange,
   liveItem,
@@ -169,6 +171,37 @@ export function ChartPanel({
       lastTimeRef.current = -Infinity;
     };
   }, []);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+    if (!chart || !series) return;
+    const light = theme === "light";
+    chart.applyOptions({
+      layout: { textColor: light ? "#5b6478" : "#8f97ac" },
+      grid: {
+        vertLines: { color: light ? "rgba(20,26,43,0.09)" : "rgba(255,255,255,0.045)" },
+        horzLines: { color: light ? "rgba(20,26,43,0.09)" : "rgba(255,255,255,0.045)" }
+      },
+      rightPriceScale: { borderColor: light ? "rgba(138,100,20,0.3)" : "rgba(233,196,106,0.22)" },
+      timeScale: { borderColor: light ? "rgba(138,100,20,0.3)" : "rgba(233,196,106,0.22)" },
+      crosshair: {
+        vertLine: {
+          color: light ? "rgba(138,100,20,0.55)" : "rgba(246,223,160,0.45)",
+          labelBackgroundColor: light ? "#b8860b" : "#8a6414"
+        },
+        horzLine: {
+          color: light ? "rgba(138,100,20,0.55)" : "rgba(246,223,160,0.45)",
+          labelBackgroundColor: light ? "#b8860b" : "#8a6414"
+        }
+      }
+    });
+    series.applyOptions({
+      lineColor: light ? "#b8860b" : "#f0c75e",
+      topColor: light ? "rgba(184,134,11,0.22)" : "rgba(240,199,94,0.30)",
+      bottomColor: light ? "rgba(184,134,11,0.02)" : "rgba(240,199,94,0.02)"
+    });
+  }, [theme]);
 
   // Keep the active instrument chip visible when a price click jumps here.
   useEffect(() => {

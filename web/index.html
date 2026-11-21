@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0a1020" />
+    <script>
+      try {
+        if (localStorage.getItem("narkhino-theme") === "light") {
+          document.documentElement.dataset.theme = "light";
+        }
+      } catch {}
+    </script>
     <meta
       name="description"
       content="نرخینو — تابلو و ماشین‌حساب دقیق قیمت طلا، سکه و ارز؛ ارزش ذاتی از انس جهانی، حباب مثبت و منفی و نمودار تاریخچه"

@@ -63,7 +63,14 @@ export async function buildPriceImage(
   category: ImageCategory,
   now = new Date()
 ): Promise<Blob> {
-  await document.fonts.ready.catch(() => undefined);
+  // Waiting for every font face stalls the export; the Vazirmatn family is the
+  // only one used here, so ask for that face alone and cap the wait.
+  if (!document.fonts.check('600 30px "Vazirmatn Variable"')) {
+    await Promise.race([
+      document.fonts.load('600 30px "Vazirmatn Variable"').catch(() => undefined),
+      new Promise((resolve) => setTimeout(resolve, 400))
+    ]);
+  }
   const rows = pickItems(items, category);
   const height = HEADER_H + Math.max(rows.length, 1) * ROW_H + FOOTER_H;
 
@@ -95,24 +102,24 @@ export async function buildPriceImage(
   drawBrand(ctx, WIDTH - PAD - 120, 50, 3);
   ctx.textAlign = "right";
   ctx.fillStyle = "#f6f1e4";
-  ctx.font = '700 58px Vazirmatn, Tahoma, sans-serif';
+  ctx.font = '700 58px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
   ctx.fillText(BRAND.name, WIDTH - PAD - 148, 112);
   ctx.fillStyle = "#e9c46a";
-  ctx.font = '500 26px Vazirmatn, Tahoma, sans-serif';
+  ctx.font = '500 26px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
   ctx.fillText(BRAND.tagline, WIDTH - PAD - 148, 156);
 
   ctx.textAlign = "left";
   ctx.fillStyle = "#9aa3b8";
-  ctx.font = '500 25px Vazirmatn, Tahoma, sans-serif';
+  ctx.font = '500 25px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
   ctx.fillText(fmtTime(now.getTime()), PAD, 94);
   ctx.fillText(fmtDate(now), PAD, 134);
 
   ctx.textAlign = "right";
   ctx.fillStyle = "#cfd6e6";
-  ctx.font = '600 32px Vazirmatn, Tahoma, sans-serif';
+  ctx.font = '600 32px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
   ctx.fillText(IMAGE_CATEGORY_LABEL[category], WIDTH - PAD, 218);
   ctx.fillStyle = "#7f889e";
-  ctx.font = '500 22px Vazirmatn, Tahoma, sans-serif';
+  ctx.font = '500 22px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
   ctx.fillText("قیمت‌های لحظه‌ای تابلو · به تومان", WIDTH - PAD - 250, 218);
 
   ctx.strokeStyle = "rgba(233,196,106,0.35)";
@@ -125,7 +132,7 @@ export async function buildPriceImage(
   if (rows.length === 0) {
     ctx.textAlign = "center";
     ctx.fillStyle = "#9aa3b8";
-    ctx.font = '500 32px Vazirmatn, Tahoma, sans-serif';
+    ctx.font = '500 32px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
     ctx.fillText("قیمتی برای نمایش در دسترس نیست", WIDTH / 2, HEADER_H + ROW_H / 2 + 10);
   }
 
@@ -139,22 +146,22 @@ export async function buildPriceImage(
 
     ctx.textAlign = "right";
     ctx.fillStyle = "#e7ebf4";
-    ctx.font = '600 30px Vazirmatn, Tahoma, sans-serif';
+    ctx.font = '600 30px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
     ctx.fillText(item.title, WIDTH - PAD, y + 46);
 
     const pct = item.changePct;
     ctx.fillStyle = pct === null ? "#7f889e" : pct > 0 ? "#43d493" : pct < 0 ? "#f16f6f" : "#7f889e";
-    ctx.font = '500 23px Vazirmatn, Tahoma, sans-serif';
+    ctx.font = '500 23px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
     ctx.textAlign = "right";
     ctx.fillText(fmtPct(pct), WIDTH - PAD, y + 74);
 
     ctx.textAlign = "left";
     ctx.fillStyle = "#f6dfa0";
-    ctx.font = '700 34px Vazirmatn, Tahoma, sans-serif';
+    ctx.font = '700 34px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
     const value = item.unit === "TOMAN" ? faNum(item.price as number) : faNum2(item.price as number);
     ctx.fillText(value, PAD + 30, y + 50);
     ctx.fillStyle = "#8f97ac";
-    ctx.font = '500 20px Vazirmatn, Tahoma, sans-serif';
+    ctx.font = '500 20px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
     ctx.fillText(item.unit === "TOMAN" ? "تومان" : "دلار", PAD + 30, y + 78);
   });
 
@@ -167,10 +174,10 @@ export async function buildPriceImage(
 
   ctx.textAlign = "center";
   ctx.fillStyle = "#c9d0e0";
-  ctx.font = '500 23px Vazirmatn, Tahoma, sans-serif';
+  ctx.font = '500 23px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
   ctx.fillText(BRAND.disclaimer, WIDTH / 2, footerY + 52);
   ctx.fillStyle = "#e9c46a";
-  ctx.font = '600 22px Vazirmatn, Tahoma, sans-serif';
+  ctx.font = '600 22px "Vazirmatn Variable", Vazirmatn, Tahoma, sans-serif';
   ctx.fillText(`${BRAND.name} · ${BRAND.latin}`, WIDTH / 2, footerY + 96);
 
   return new Promise<Blob>((resolve, reject) => {
