@@ -95,12 +95,40 @@ export async function fetchTalaseaPrice(
   };
 }
 
+/**
+ * Milli's public JSON endpoint (server-side only; its CDN rejects browser
+ * origins). `price18` is in thousand Rial.
+ */
+async function fetchMilliJson(
+  url: string,
+  timeoutMs: number,
+  now: number
+): Promise<PlatformPrice | null> {
+  const api = new URL("/api/v1/public/milli-price/external", url).toString();
+  const res = await fetch(api, {
+    headers: { accept: "application/json", "user-agent": USER_AGENT },
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+  if (!res.ok) return null;
+  const raw = (await res.json()) as { data?: { price18?: unknown } } | null;
+  const thousandRial = parseNumber(raw?.data?.price18);
+  const priceRial = thousandRial === null ? null : thousandRial * 1_000;
+  if (!inBounds(priceRial)) return null;
+  return { id: "milli", priceRial, changePct: null, fetchedAt: now };
+}
+
 /** Milli renders "۲۳۵,۴۹۰,۰۰۰ ریال — قیمت ۱ گرم طلای ۱۸ عیار" server-side. */
 export async function fetchMilliPrice(
   url: string,
   timeoutMs: number,
   now = Date.now()
 ): Promise<PlatformPrice> {
+  try {
+    const fromApi = await fetchMilliJson(url, timeoutMs, now);
+    if (fromApi) return fromApi;
+  } catch {
+    // fall through to the HTML page
+  }
   const text = stripTags(await fetchTextCookied(url, timeoutMs));
   const m = text.match(/([0-9,]+)\s*ریال\s*قیمت\s*1\s*گرم\s*طلای\s*18\s*عیار/);
   const priceRial = parseNumber(m?.[1]);

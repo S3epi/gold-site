@@ -24,7 +24,6 @@ import { useFlash } from "./useFlash";
 
 const TICKER_IDS = [
   "gold18",
-  "melted18",
   "melted",
   "mithqal",
   "gold24",
@@ -66,7 +65,7 @@ export default function App() {
   const coins = items.filter((item) => item.category === "coin");
   const currencies = items.filter((item) => item.category === "currency");
   const calculations = data?.calculations ?? null;
-  const featured = byId.get("melted18") ?? byId.get("gold18") ?? null;
+  const featured = byId.get("gold18") ?? byId.get("melted18") ?? null;
   const selected = byId.get(selectedId) ?? null;
   const ticker = TICKER_IDS.map((id) => byId.get(id)).filter(
     (item): item is NonNullable<typeof item> => Boolean(item && item.price !== null)
@@ -230,7 +229,7 @@ export default function App() {
 
         <BoardSection
           title={CATEGORY_TITLE.gold}
-          hint="قیمت‌ها به تومان؛ آبشدهٔ بنکداری و مثقال به ازای هر مثقال"
+          hint="قیمت‌ها به تومان؛ ۱۸ عیار بازار زنده است، آبشدهٔ آنلاین با تأخیر چنددقیقه‌ای"
           items={gold}
           onSelect={openChart}
           loading={!data && !error}

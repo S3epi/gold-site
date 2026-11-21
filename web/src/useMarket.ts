@@ -3,7 +3,7 @@ import type { PricesPayload } from "@mesghalyar/shared";
 import { createTransport, type MarketTransport } from "./transport";
 import { referenceIsSynced, syncReferenceTime } from "./serverClock";
 
-const POLL_MS = 20_000;
+const POLL_MS = 10_000;
 const HIDDEN_POLL_MS = 90_000;
 const MAX_BACKOFF_MS = 120_000;
 
