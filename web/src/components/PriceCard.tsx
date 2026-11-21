@@ -7,6 +7,7 @@ import {
   faNum,
   fmtChange,
   fmtPct,
+  fmtPrice,
   fmtTime,
   trendClass
 } from "../format";
@@ -83,6 +84,23 @@ export function PriceCard({ item, featured = false, onSelect }: Props) {
           </span>
         </div>
       )}
+
+      {item.category === "gold" && (item.high !== null || item.low !== null) ? (
+        <div className="card__day">
+          <span>
+            بیشترین امروز
+            <b>
+              <bdi>{fmtPrice(item.high ?? null, item.unit)}</bdi>
+            </b>
+          </span>
+          <span>
+            کمترین امروز
+            <b>
+              <bdi>{fmtPrice(item.low ?? null, item.unit)}</bdi>
+            </b>
+          </span>
+        </div>
+      ) : null}
 
       {bubble ? (
         <div

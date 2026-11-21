@@ -650,7 +650,7 @@ export class StaticTransport implements MarketTransport {
     for (const p of PERIODS) {
       const start = periodStart(p, now);
       const count = all.filter((r) => r.ts >= start && r.ts <= now).length;
-      periods[p] = { available: count >= 2, count };
+      periods[p] = { available: count >= (p === "today" ? 1 : 2), count };
     }
 
     const lastPoint = merged.length ? merged[merged.length - 1] : null;
@@ -696,7 +696,7 @@ export class StaticTransport implements MarketTransport {
     for (const p of PERIODS) {
       const start = periodStart(p, now);
       const count = all.filter((r) => r.ts >= start && r.ts <= now).length;
-      periods[p] = { available: count >= 2, count };
+      periods[p] = { available: count >= (p === "today" ? 1 : 2), count };
     }
 
     const lastPoint = merged.length ? merged[merged.length - 1] : null;

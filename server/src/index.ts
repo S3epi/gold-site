@@ -22,7 +22,7 @@ engine.start();
 
 try {
   await app.listen({ port: config.port, host: config.host });
-  app.log.info(`MesghalYar API listening on http://localhost:${config.port}`);
+  app.log.info(`Narkhino API listening on http://localhost:${config.port}`);
 } catch (err) {
   app.log.error(err);
   process.exit(1);

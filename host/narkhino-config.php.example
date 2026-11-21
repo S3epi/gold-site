@@ -1,0 +1,24 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * این فایل را با نام narkhino-config.php در پوشهٔ بالای public_html بگذارید
+ * (مثلاً /home/USER/narkhino-config.php) تا از دسترس وب خارج بماند.
+ */
+
+const NK_DB_DSN = 'mysql:host=localhost;dbname=cpaneluser_narkhino;charset=utf8mb4';
+const NK_DB_USER = 'cpaneluser_narkhino';
+const NK_DB_PASS = 'DATABASE_PASSWORD';
+
+/**
+ * رمز پنل مالک. یا هش bcrypt (شروع با $2y$) را بگذارید یا SHA-256 رمز.
+ * هش فعلی متناظر رمز معتبر سایت است؛ برای تغییر رمز از tools/hash-password.php استفاده کنید.
+ */
+const NK_OWNER_PASSWORD = '5c49ca36f21d23af28221879e443906709961a1ebe189bcf7bc1d9c6385dcd37';
+
+const NK_SITE_URL = 'https://example.com';
+const NK_TIMEZONE = 'Asia/Tehran';
+const NK_COOKIE_PATH = '/';
+
+/** پوشهٔ کش قیمت؛ باید قابل نوشتن باشد. خالی بگذارید تا از tmp سرور استفاده شود. */
+const NK_CACHE_DIR = '';

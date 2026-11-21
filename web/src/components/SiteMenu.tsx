@@ -3,16 +3,29 @@ import { createPortal } from "react-dom";
 import type { CalculationsPayload, PriceItem } from "@mesghalyar/shared";
 import { Calculator } from "./Calculator";
 import { channelUsername } from "../channel";
+import { BRAND } from "../brand";
 
 interface Props {
   channel: string | null;
   calculations: CalculationsPayload | null;
   items: PriceItem[];
+  board: boolean;
   onChart: () => void;
   onReference: () => void;
+  onToggleBoard: () => void;
+  onImage: () => void;
 }
 
-export function SiteMenu({ channel, calculations, items, onChart, onReference }: Props) {
+export function SiteMenu({
+  channel,
+  calculations,
+  items,
+  board,
+  onChart,
+  onReference,
+  onToggleBoard,
+  onImage
+}: Props) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -77,7 +90,7 @@ export function SiteMenu({ channel, calculations, items, onChart, onReference }:
               >
                 <header className="menu__head">
                   <div className="menu__head-text">
-                    <strong>منوی مثقال‌یار</strong>
+                    <strong>منوی {BRAND.name}</strong>
                     <small>ابزارها و کانال اطلاع‌رسانی</small>
                   </div>
                   <button type="button" className="menu__close" aria-label="بستن منو" onClick={close}>
@@ -110,6 +123,39 @@ export function SiteMenu({ channel, calculations, items, onChart, onReference }:
                       <span>مرجع محاسباتی</span>
                     </span>
                     <small>مقادیر نظری</small>
+                  </button>
+
+                  <button type="button" className="menu__link" onClick={() => navigate(onImage)}>
+                    <span className="menu__link-main">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                        <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
+                        <path d="m6.5 16 4.2-4.8 3 3.2 2-2.2 1.8 1.9" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="9" cy="9.2" r="1.1" />
+                      </svg>
+                      <span>خروجی عکس قیمت‌ها</span>
+                    </span>
+                    <small>دانلود تصویر PNG</small>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`menu__link ${board ? "menu__link--board-on" : ""}`}
+                    onClick={() => navigate(onToggleBoard)}
+                  >
+                    <span className="menu__link-main">
+                      {board ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                          <path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M9 20H5a1 1 0 0 1-1-1v-4M15 20h4a1 1 0 0 0 1-1v-4" strokeLinecap="round" />
+                          <path d="M9 12h6" strokeLinecap="round" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                          <path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4" strokeLinecap="round" />
+                        </svg>
+                      )}
+                      <span>{board ? "خروج از تابلو" : "تابلو"}</span>
+                    </span>
+                    <small>{board ? "بازگشت به حالت صفحه کامل" : "نمایش تمام‌صفحهٔ قیمت‌ها"}</small>
                   </button>
 
                   {channel ? (

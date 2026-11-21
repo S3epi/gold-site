@@ -104,6 +104,37 @@ export function parseNum(input: string): number {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
+/**
+ * Keeps only digits (Persian/Arabic normalized) and one decimal point, then
+ * groups the integer part by three so money is readable while typing.
+ */
+export function groupDigits(input: string, decimals = 0): string {
+  let raw = "";
+  for (const ch of input) {
+    const persian = PERSIAN_DIGITS.indexOf(ch);
+    if (persian >= 0) {
+      raw += String(persian);
+      continue;
+    }
+    const arabic = ARABIC_DIGITS.indexOf(ch);
+    if (arabic >= 0) {
+      raw += String(arabic);
+      continue;
+    }
+    if (ch >= "0" && ch <= "9") raw += ch;
+    else if (ch === "." || ch === "٫") raw += ".";
+  }
+  const dot = raw.indexOf(".");
+  const whole = (dot >= 0 ? raw.slice(0, dot) : raw).replace(/^0+(?=\d)/, "");
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  if (dot < 0 || decimals <= 0) return grouped;
+  const fraction = raw
+    .slice(dot + 1)
+    .replace(/\./g, "")
+    .slice(0, decimals);
+  return `${grouped}.${fraction}`;
+}
+
 export function fmtAge(ts: number | null, now = Date.now()): string {
   if (!ts) return "—";
   const sec = Math.max(0, Math.floor((now - ts) / 1000));

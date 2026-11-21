@@ -7,6 +7,8 @@ import { FlashNumber } from "./components/FlashNumber";
 import { OwnerPanel } from "./components/OwnerPanel";
 import { PriceCard } from "./components/PriceCard";
 import { SiteMenu } from "./components/SiteMenu";
+import { PriceImageModal } from "./components/PriceImageModal";
+import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import {
   bubbleClass,
   faNum,
@@ -21,6 +23,8 @@ import {
 import { referenceNow } from "./serverClock";
 import { readChannel } from "./channel";
 import { useFlash } from "./useFlash";
+import { useWakeLock } from "./useWakeLock";
+import { BRAND } from "./brand";
 
 const TICKER_IDS = [
   "gold18",
@@ -41,7 +45,11 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [channel, setChannel] = useState<string | null>(() => readChannel());
   const [ownerOpen, setOwnerOpen] = useState(false);
+  const [board, setBoard] = useState(false);
+  const [imageOpen, setImageOpen] = useState(false);
   const brandTaps = useRef<number[]>([]);
+
+  useWakeLock();
 
   useEffect(() => {
     if (location.hash === "#owner") {
@@ -49,6 +57,28 @@ export default function App() {
       history.replaceState(null, "", location.pathname + location.search);
     }
   }, []);
+
+  useEffect(() => {
+    const sync = (): void => {
+      if (!document.fullscreenElement) setBoard(false);
+    };
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+
+  const toggleBoard = (): void => {
+    if (board) {
+      setBoard(false);
+      if (document.fullscreenElement) {
+        void document.exitFullscreen().catch(() => undefined);
+      }
+      return;
+    }
+    setBoard(true);
+    if (!document.fullscreenElement) {
+      void document.documentElement.requestFullscreen?.().catch(() => undefined);
+    }
+  };
 
   const tapBrand = (): void => {
     const now = Date.now();
@@ -91,28 +121,19 @@ export default function App() {
       : null;
 
   return (
-    <div className="app">
+    <div className={`app${board ? " app--board" : ""}`}>
       <header className="header">
         <div className="wrap header__inner">
           <div className="brand">
             <span className="brand__mark" aria-hidden="true" onClick={tapBrand}>
               <svg viewBox="0 0 40 40" role="img">
-                <path
-                  d="M20 3 33 11.5v17L20 37 7 28.5v-17L20 3Z"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                />
-                <path
-                  d="M20 12.5 26.5 20 20 27.5 13.5 20 20 12.5Z"
-                  fill="currentColor"
-                  opacity="0.85"
-                />
+                <path d={BRAND.iconOuter} fill="none" stroke="currentColor" strokeWidth="1.6" />
+                <path d={BRAND.iconInner} fill="currentColor" opacity="0.85" />
               </svg>
             </span>
             <span className="brand__text">
-              <strong>مثقال‌یار</strong>
-              <small>تابلو و محاسبهٔ دقیق بازار طلا</small>
+              <strong>{BRAND.name}</strong>
+              <small>{BRAND.tagline}</small>
             </span>
           </div>
 
@@ -130,8 +151,11 @@ export default function App() {
               channel={channel}
               calculations={calculations}
               items={items}
+              board={board}
               onChart={() => scrollToSection("chart")}
               onReference={() => scrollToSection("reference")}
+              onToggleBoard={toggleBoard}
+              onImage={() => setImageOpen(true)}
             />
           </div>
         </div>
@@ -289,7 +313,7 @@ export default function App() {
         <section className="panel calc-panel" id="reference">
           <div className="panel__head">
             <div>
-              <h2 className="panel__title">مرجع محاسباتی مثقال‌یار</h2>
+              <h2 className="panel__title">مرجع محاسباتی {BRAND.name}</h2>
               <p className="panel__sub">
                 مقادیر نظری از انس جهانی، دلار و عیار محاسبه می‌شوند؛ مظنه بازار نیستند
               </p>
@@ -350,7 +374,7 @@ export default function App() {
         <div className="wrap footer__inner">
           <p className="footer__disclaimer">
             <strong>هشدار معامله:</strong> قیمت‌های این سایت صرفاً برای اطلاع و محاسبه است و نباید مبنای
-            هیچ معامله‌ای قرار گیرد. مثقال‌یار تابلو و ابزار محاسبه است، نه کارگزاری یا مشاور مالی، و
+            هیچ معامله‌ای قرار گیرد. {BRAND.name} تابلو و ابزار محاسبه است، نه کارگزاری یا مشاور مالی، و
             هیچ مسئولیتی در قبال تصمیم‌ها، معاملات یا زیان‌های ناشی از استفاده از این اطلاعات نمی‌پذیرد.
           </p>
         </div>
@@ -358,6 +382,16 @@ export default function App() {
 
       {ownerOpen ? (
         <OwnerPanel onClose={() => setOwnerOpen(false)} onChannelChange={setChannel} />
+      ) : null}
+
+      {imageOpen ? <PriceImageModal onClose={() => setImageOpen(false)} items={items} /> : null}
+
+      <AnnouncementBanner />
+
+      {board ? (
+        <button type="button" className="board-exit" onClick={toggleBoard}>
+          خروج از تابلو
+        </button>
       ) : null}
     </div>
   );

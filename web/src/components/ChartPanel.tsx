@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AreaSeries,
   ColorType,
   CrosshairMode,
   LineStyle,
   createChart,
+  type IPriceLine,
   type ISeriesApi,
   type IChartApi,
   type UTCTimestamp
@@ -23,6 +24,8 @@ import { FlashNumber } from "./FlashNumber";
 
 // Times are shifted so the chart's UTC axis reads as Tehran local time.
 const TEHRAN_OFFSET_SEC = 12_600;
+// Five Fibonacci retracement supports across the visible range (S1 nearest the high).
+const SUPPORT_RATIOS = [0.236, 0.382, 0.5, 0.618, 0.786];
 
 interface Props {
   transport: React.MutableRefObject<MarketTransport | null>;
@@ -53,6 +56,7 @@ export function ChartPanel({
   const dataKeyRef = useRef<string>("");
   const precisionRef = useRef<0 | 2>(0);
   const lastTimeRef = useRef<number>(-Infinity);
+  const priceLinesRef = useRef<IPriceLine[]>([]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -264,6 +268,52 @@ export function ChartPanel({
   const last = values.length ? values[values.length - 1] : null;
   const unit = payload?.instrument.unit ?? "TOMAN";
 
+  const supports = useMemo(() => {
+    const supportsEnabled = payload?.instrument.id === "gold18" || payload?.instrument.id === "usd";
+    if (!supportsEnabled || payload.points.length < 2) return null;
+    const prices = payload.points.map((p) => p.p);
+    const top = Math.max(...prices);
+    const bottom = Math.min(...prices);
+    const range = top - bottom;
+    if (range <= 0) return null;
+    return SUPPORT_RATIOS.map((ratio, index) => ({
+      level: top - range * ratio,
+      label: `حمایت ${faNum(index + 1)}`
+    }));
+  }, [payload]);
+
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series) return;
+    for (const line of priceLinesRef.current) {
+      try {
+        series.removePriceLine(line);
+      } catch {
+        // chart was already recreated
+      }
+    }
+    priceLinesRef.current = [];
+    if (!supports) return;
+    priceLinesRef.current = supports.map((support, index) =>
+      series.createPriceLine({
+        price: support.level,
+        color: `rgba(233,196,106,${0.5 - index * 0.06})`,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dotted,
+        axisLabelVisible: true,
+        title: support.label
+      })
+    );
+  }, [supports]);
+
+  const lastSeen = Math.max(
+    payload?.meta.lastTs ?? 0,
+    points.length ? points[points.length - 1].t * 1000 : 0,
+    liveItem?.id === payload?.instrument.id ? liveItem?.ts ?? 0 : 0
+  );
+  const todayHigh = liveItem && liveItem.id === payload?.instrument.id ? liveItem.high ?? null : null;
+  const todayLow = liveItem && liveItem.id === payload?.instrument.id ? liveItem.low ?? null : null;
+
   return (
     <section className="panel chart-panel" id="chart">
       <div className="panel__head">
@@ -348,6 +398,18 @@ export function ChartPanel({
           <dt>کمترین بازه</dt>
           <dd>{fmtPrice(low, unit)}</dd>
         </div>
+        {todayHigh !== null ? (
+          <div>
+            <dt>بیشترین امروز</dt>
+            <dd>{fmtPrice(todayHigh, unit)}</dd>
+          </div>
+        ) : null}
+        {todayLow !== null ? (
+          <div>
+            <dt>کمترین امروز</dt>
+            <dd>{fmtPrice(todayLow, unit)}</dd>
+          </div>
+        ) : null}
         <div>
           <dt>ابتدای بازه</dt>
           <dd>{fmtPrice(open, unit)}</dd>
@@ -358,8 +420,24 @@ export function ChartPanel({
         </div>
       </dl>
 
+      {supports ? (
+        <div className="chart-supports" aria-label="سطوح حمایتی بازار">
+          <span className="chart-supports__title">سطوح حمایت ({unit === "TOMAN" ? "تومان" : "دلار"})</span>
+          <div className="chart-supports__list">
+            {supports.map((support) => (
+              <span key={support.label} className="chart-supports__item">
+                <i>{support.label}</i>
+                <b>
+                  <bdi>{fmtPrice(support.level, unit)}</bdi>
+                </b>
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="chart-meta">
-        <span>آخرین مشاهده: {fmtTime(payload?.meta.lastTs ?? null)}</span>
+        <span>آخرین مشاهده: {fmtTime(lastSeen || null)}</span>
         <span>
           بازه: {payload ? `${fmtDateTime(payload.range.from)} تا ${fmtDateTime(payload.range.to)}` : "—"}
         </span>
